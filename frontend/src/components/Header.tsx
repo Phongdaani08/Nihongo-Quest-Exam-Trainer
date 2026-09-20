@@ -1,10 +1,12 @@
 import React from 'react';
-import { Timer, Mic, Award, Image, BookOpen, Volume2, CheckCircle2, Infinity as InfinityIcon } from 'lucide-react';
+import { Timer, Mic, Award, Image, BookOpen, Volume2, CheckCircle2, Infinity as InfinityIcon, BarChart3 } from 'lucide-react';
 import { playJapaneseAudio } from '../utils/speech';
 
+export type TabType = 'mock_exam' | 'endless_practice' | 'jiko_shokai' | 'speed_vocab' | 'visual_qa' | 'vocab_vault' | 'dashboard';
+
 interface HeaderProps {
-  activeTab: 'mock_exam' | 'endless_practice' | 'jiko_shokai' | 'speed_vocab' | 'visual_qa' | 'vocab_vault';
-  setActiveTab: (tab: 'mock_exam' | 'endless_practice' | 'jiko_shokai' | 'speed_vocab' | 'visual_qa' | 'vocab_vault') => void;
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
@@ -118,6 +120,15 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           >
             <BookOpen size={14} />
             คลังศัพท์
+          </button>
+
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={activeTab === 'dashboard' ? 'btn-primary' : 'btn-outline'}
+            style={{ padding: '6px 12px', fontSize: '12px', borderRadius: 'var(--radius-md)', fontWeight: 700 }}
+          >
+            <BarChart3 size={14} />
+            แดชบอร์ด (Analytics)
           </button>
         </nav>
 

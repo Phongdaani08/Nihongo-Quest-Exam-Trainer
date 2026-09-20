@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Header } from './components/Header';
+import { Header, TabType } from './components/Header';
 import { JikoShokaiTrainer } from './components/JikoShokaiTrainer';
 import { SpeedVocabTrainer } from './components/SpeedVocabTrainer';
 import { VisualQAArena } from './components/VisualQAArena';
 import { MockExamSimulator } from './components/MockExamSimulator';
 import { VocabVault } from './components/VocabVault';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'mock_exam' | 'endless_practice' | 'jiko_shokai' | 'speed_vocab' | 'visual_qa' | 'vocab_vault'>('mock_exam');
+  const [activeTab, setActiveTab] = useState<TabType>('mock_exam');
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -21,6 +22,7 @@ export const App: React.FC = () => {
           {activeTab === 'speed_vocab' && <SpeedVocabTrainer />}
           {activeTab === 'visual_qa' && <VisualQAArena />}
           {activeTab === 'vocab_vault' && <VocabVault />}
+          {activeTab === 'dashboard' && <AnalyticsDashboard />}
         </div>
       </main>
 

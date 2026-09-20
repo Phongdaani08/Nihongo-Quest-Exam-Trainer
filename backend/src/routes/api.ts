@@ -15,6 +15,7 @@ router.get('/chapters', VocabController.getChapters);
 
 // Exam & Question Bank
 router.get('/exam/questions', ExamController.getQuestions);
+router.get('/exam/stats', ExamController.getExamStats);
 router.post('/exam/sessions/start', ExamController.startSession);
 router.post('/exam/sessions/:id/submit', ExamController.submitSession);
 router.get('/exam/sessions/:id/report', ExamController.getSessionReport);

@@ -58,9 +58,18 @@ export class ExamController {
 
   static async getRecentSessions(req: Request, res: Response) {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
       const sessions = await ExamService.getRecentSessions(limit);
       res.json({ success: true, count: sessions.length, data: sessions });
+    } catch (error) {
+      res.status(500).json({ success: false, error: (error as Error).message });
+    }
+  }
+
+  static async getExamStats(_req: Request, res: Response) {
+    try {
+      const stats = await ExamService.getExamStats();
+      res.json({ success: true, data: stats });
     } catch (error) {
       res.status(500).json({ success: false, error: (error as Error).message });
     }

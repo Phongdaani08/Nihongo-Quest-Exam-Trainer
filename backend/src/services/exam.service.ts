@@ -113,11 +113,84 @@ export class ExamService {
     };
   }
 
-  static async getRecentSessions(limit: number = 10): Promise<ExamSession[]> {
-    const result = await pool.query(
-      `SELECT * FROM exam_sessions WHERE completed_at IS NOT NULL ORDER BY completed_at DESC LIMIT $1`,
-      [limit]
-    );
-    return result.rows;
+  static async getRecentSessions(limit: number = 20): Promise<ExamSession[]> {
+    try {
+      const result = await pool.query(
+        `SELECT * FROM exam_sessions WHERE completed_at IS NOT NULL ORDER BY completed_at DESC LIMIT $1`,
+        [limit]
+      );
+      return result.rows;
+    } catch {
+      return [];
+    }
+  }
+
+  static async getExamStats(): Promise<any> {
+    try {
+      const statsRes = await pool.query(`
+        SELECT 
+          COUNT(*)::int as total_attempts,
+          COALESCE(AVG(total_score), 0)::float as avg_total_score,
+          COALESCE(AVG(score_section_1), 0)::float as avg_section_1,
+          COALESCE(AVG(score_section_2), 0)::float as avg_section_2,
+          COALESCE(AVG(score_section_3), 0)::float as avg_section_3,
+          COALESCE(AVG(total_duration_seconds), 0)::float as avg_duration_seconds,
+          COUNT(CASE WHEN total_score >= 12 THEN 1 END)::int as pass_count,
+          COUNT(CASE WHEN total_score = 15 THEN 1 END)::int as perfect_count
+        FROM exam_sessions 
+        WHERE completed_at IS NOT NULL
+      `);
+
+      const trendRes = await pool.query(`
+        SELECT 
+          id,
+          student_name,
+          score_section_1,
+          score_section_2,
+          score_section_3,
+          total_score,
+          total_duration_seconds,
+          completed_at
+        FROM exam_sessions
+        WHERE completed_at IS NOT NULL
+        ORDER BY completed_at ASC
+        LIMIT 30
+      `);
+
+      const stats = statsRes.rows[0] || {
+        total_attempts: 0,
+        avg_total_score: 0,
+        avg_section_1: 0,
+        avg_section_2: 0,
+        avg_section_3: 0,
+        avg_duration_seconds: 0,
+        pass_count: 0,
+        perfect_count: 0
+      };
+
+      const passRate = stats.total_attempts > 0 
+        ? Math.round((stats.pass_count / stats.total_attempts) * 100) 
+        : 0;
+
+      return {
+        ...stats,
+        pass_rate: passRate,
+        score_trend: trendRes.rows,
+      };
+    } catch (error) {
+      console.error('Error computing exam stats from DB:', error);
+      return {
+        total_attempts: 0,
+        avg_total_score: 0,
+        avg_section_1: 0,
+        avg_section_2: 0,
+        avg_section_3: 0,
+        avg_duration_seconds: 0,
+        pass_count: 0,
+        perfect_count: 0,
+        pass_rate: 0,
+        score_trend: [],
+      };
+    }
   }
 }
