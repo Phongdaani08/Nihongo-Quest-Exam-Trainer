@@ -79,7 +79,7 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onToggleSidebar }) =>
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="btn-outline"
+            className="mobile-only-btn btn-outline"
             style={{
               padding: '6px 9px',
               borderRadius: '6px',

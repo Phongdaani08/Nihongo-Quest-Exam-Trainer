@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="btn-outline"
+              className="sidebar-close-btn btn-outline"
               style={{
                 display: 'flex',
                 alignItems: 'center',
