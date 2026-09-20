@@ -5,10 +5,10 @@ export type ThemeMode = 'dark' | 'light';
 const THEME_KEY = 'nihongo_theme';
 
 export const getStoredTheme = (): ThemeMode => {
-  if (typeof window === 'undefined') return 'dark';
+  if (typeof window === 'undefined') return 'light';
   const stored = localStorage.getItem(THEME_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
-  return 'dark'; // Default is Dark Mode
+  return 'light'; // Default is Light Mode
 };
 
 export const applyTheme = (theme: ThemeMode) => {
@@ -20,7 +20,7 @@ export const applyTheme = (theme: ThemeMode) => {
 
 export const toggleTheme = (): ThemeMode => {
   const current = getStoredTheme();
-  const next: ThemeMode = current === 'dark' ? 'light' : 'dark';
+  const next: ThemeMode = current === 'light' ? 'dark' : 'light';
   applyTheme(next);
   return next;
 };
