@@ -207,7 +207,7 @@ export const JikoShokaiTrainer: React.FC = () => {
       </div>
 
       {/* Step Tabs 1 - 5 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+      <div className="step-progress-strip">
         {lines.map((l) => {
           const isDone = stepStatus[l.step] === 'correct';
           const isWrong = stepStatus[l.step] === 'wrong';

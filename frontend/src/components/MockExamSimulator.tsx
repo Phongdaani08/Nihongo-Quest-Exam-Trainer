@@ -982,7 +982,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                   แถบเลือกส่วนที่กำลังสอบ:
                 </span>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="exam-section-switcher">
                   {[
                     { id: 1, label: 'ส่วนที่ 1: แนะนำตัว (5 ท่อน)' },
                     { id: 2, label: 'ส่วนที่ 2: แปลไทย-ญี่ปุ่น' },
@@ -1056,7 +1056,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
               )}
 
               {/* 5 Step Progress Strip */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '20px' }}>
+              <div className="step-progress-strip" style={{ marginBottom: '20px' }}>
                 {[1, 2, 3, 4, 5].map((stepNum) => (
                   <button
                     key={stepNum}

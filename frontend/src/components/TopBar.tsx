@@ -173,6 +173,7 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onToggleSidebar }) =>
 
         {/* Candidate Profile Badge */}
         <div
+          className="mobile-hide"
           style={{
             display: 'flex',
             alignItems: 'center',

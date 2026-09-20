@@ -283,7 +283,7 @@ input:focus, select:focus, textarea:focus {
    RESPONSIVE & MOBILE / TABLET OPTIMIZATIONS
    ========================================================================== */
 
-/* 4 Choices in 1 Row (4 columns) */
+/* 4 Choices Layout (4 columns on Desktop/Tablet, Clean 1 Column on Mobile) */
 .choice-grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -295,8 +295,8 @@ input:focus, select:focus, textarea:focus {
 
 @media (max-width: 640px) {
   .choice-grid-4 {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
@@ -377,6 +377,95 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
+/* Mobile Hide & Compact Utilities */
+@media (max-width: 640px) {
+  .mobile-hide {
+    display: none !important;
+  }
+  .mobile-compact-title {
+    font-size: 13px !important;
+  }
+  .mobile-compact-card {
+    padding: 16px 14px !important;
+  }
+}
+
+/* KPI Metrics Grid */
+.kpi-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .kpi-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .kpi-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Analytics Charts 2-Column Grid (100% on Mobile) */
+.analytics-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .analytics-charts-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Step 1-5 Progress Strip */
+.step-progress-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .step-progress-strip {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .step-progress-strip > button {
+    flex: 0 0 auto;
+    min-width: 80px;
+  }
+}
+
+/* Exam Section Switcher Buttons */
+.exam-section-switcher {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .exam-section-switcher {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+  }
+  .exam-section-switcher > button {
+    flex: 1;
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+    text-align: center;
+  }
+}
+
 /* Responsive 2-column Question Layout (stacks on mobile/tablet) */
 .visual-qa-grid {
   display: grid;
@@ -410,5 +499,6 @@ input:focus, select:focus, textarea:focus {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 
 

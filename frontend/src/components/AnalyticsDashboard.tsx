@@ -716,13 +716,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
       {/* KPI Top Metrics Strip */}
       {stats && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '12px',
-          }}
-        >
+        <div className="kpi-metrics-grid">
           {/* KPI 1 */}
           <div className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--bg-surface)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -781,7 +775,7 @@ export const AnalyticsDashboard: React.FC = () => {
       )}
 
       {/* 2-Column Responsive Charts Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '20px' }}>
+      <div className="analytics-charts-grid">
         {/* CHART 1: Historical Score Progression */}
         <div className="card" style={{ padding: '20px', backgroundColor: 'var(--bg-surface)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
