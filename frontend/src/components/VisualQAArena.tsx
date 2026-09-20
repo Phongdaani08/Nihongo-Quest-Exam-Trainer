@@ -1151,7 +1151,7 @@ export const VisualQAArena: React.FC = () => {
       </div>
 
       {/* 5-Type Filter Toolbar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+      <div className="category-filter-grid">
         {[
           { id: 0, label: 'ทั้งหมด (รวม 5 แบบ)' },
           { id: 1, label: '1. สิ่งของ (Kore wa nan...)' },
@@ -1240,7 +1240,7 @@ export const VisualQAArena: React.FC = () => {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '32px', alignItems: 'center' }}>
+        <div className="visual-qa-grid">
           {/* Left: Pure Photo without Any Text/Spoilers */}
           <div style={{
             border: '1px solid var(--border-subtle)',

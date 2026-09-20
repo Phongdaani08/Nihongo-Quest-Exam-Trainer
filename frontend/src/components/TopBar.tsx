@@ -1,11 +1,13 @@
 import React from 'react';
-import { Volume2, CheckCircle2, User, ChevronRight, Sun, Moon } from 'lucide-react';
+import { Volume2, CheckCircle2, User, Sun, Moon, Menu } from 'lucide-react';
 import { playJapaneseAudio } from '../utils/speech';
 import { useTheme } from '../utils/theme';
 import { TabType } from './Sidebar';
 
 interface TopBarProps {
   activeTab: TabType;
+  onToggleSidebar?: () => void;
+  isSidebarOpen?: boolean;
 }
 
 const TAB_METADATA: Record<TabType, { group: string; title: string; description: string }> = {
@@ -46,7 +48,7 @@ const TAB_METADATA: Record<TabType, { group: string; title: string; description:
   },
 };
 
-export const TopBar: React.FC<TopBarProps> = ({ activeTab }) => {
+export const TopBar: React.FC<TopBarProps> = ({ activeTab, onToggleSidebar }) => {
   const [theme, toggleTheme] = useTheme();
 
   const currentMeta = TAB_METADATA[activeTab] || {
@@ -64,20 +66,56 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 28px',
+        padding: '0 16px',
         position: 'sticky',
         top: 0,
         zIndex: 40,
         boxShadow: 'var(--shadow-sm)',
+        gap: '12px',
       }}
     >
-      {/* Breadcrumb & Section Name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{currentMeta.group}</span>
-        <ChevronRight size={13} color="var(--text-faint)" />
-        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>
-          {currentMeta.title}
-        </span>
+      {/* Left: Hamburger Menu Button & Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="btn-outline"
+            style={{
+              padding: '6px 9px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              color: 'var(--text-main)',
+              border: '1px solid var(--border-strong)',
+              backgroundColor: 'var(--bg-surface)',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+            title="เปิด/ปิดแถบเมนู (Menu)"
+          >
+            <Menu size={16} />
+            <span style={{ fontSize: '12px', fontWeight: 600 }}>เมนู</span>
+          </button>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', display: 'none' }}>
+            {currentMeta.group}
+          </span>
+          <span
+            style={{
+              fontSize: '13.5px',
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {currentMeta.title}
+          </span>
+        </div>
       </div>
 
       {/* Right Action Tools & Profile */}

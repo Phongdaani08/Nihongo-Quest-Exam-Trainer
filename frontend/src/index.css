@@ -278,3 +278,125 @@ input:focus, select:focus, textarea:focus {
   padding: 2px 6px;
   border-radius: 4px;
 }
+
+/* ==========================================================================
+   RESPONSIVE & MOBILE / TABLET OPTIMIZATIONS
+   ========================================================================== */
+
+/* 4 Choices in 1 Row (4 columns) */
+.choice-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .choice-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+}
+
+/* Universal Sidebar & Mobile Drawer */
+.app-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 80;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.app-sidebar-backdrop.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.app-sidebar-container {
+  width: 260px;
+  min-width: 260px;
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Desktop Sidebar Collapsed State */
+.app-sidebar-container.collapsed-desktop {
+  margin-left: -260px;
+}
+
+/* Mobile & Tablet Drawer */
+@media (max-width: 1024px) {
+  .app-sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    margin-left: 0 !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .app-sidebar-container.open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content-padding {
+    padding: 14px 12px 48px !important;
+  }
+}
+
+/* Responsive 2-column Question Layout (stacks on mobile/tablet) */
+.visual-qa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .visual-qa-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* Category filter buttons responsive grid */
+.category-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .category-filter-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .category-filter-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+

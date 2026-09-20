@@ -35,12 +35,30 @@ interface NavGroup {
   items: NavItem[];
 }
 
+import { X } from 'lucide-react';
+
 interface SidebarProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  isCollapsedDesktop?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  setActiveTab,
+  isOpen = false,
+  onClose,
+  isCollapsedDesktop = false,
+}) => {
+  const handleItemClick = (tab: TabType) => {
+    setActiveTab(tab);
+    if (onClose) {
+      onClose();
+    }
+  };
+
   const navGroups: NavGroup[] = [
     {
       groupTitle: 'ภาพรวมระบบ',
@@ -109,58 +127,94 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   ];
 
   return (
-    <aside
-      style={{
-        width: '260px',
-        minWidth: '260px',
-        backgroundColor: 'var(--bg-surface)',
-        borderRight: '1px solid var(--border-subtle)',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: 'var(--shadow-sm)',
-      }}
-    >
-      {/* Brand Header */}
+    <>
+      {/* Mobile / Tablet Backdrop */}
       <div
-        style={{
-          padding: '20px 18px 16px',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}
+        className={`app-sidebar-backdrop ${isOpen ? 'active' : ''}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Main Sidebar Container */}
+      <aside
+        className={`app-sidebar-container ${isOpen ? 'open' : ''} ${
+          isCollapsedDesktop ? 'collapsed-desktop' : ''
+        }`}
       >
+        {/* Brand Header */}
         <div
           style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            backgroundColor: 'var(--primary-600)',
-            color: '#ffffff',
+            padding: '18px 16px 14px',
+            borderBottom: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '20px',
-            flexShrink: 0,
-            boxShadow: 'var(--shadow-sm)',
+            justifyContent: 'space-between',
           }}
         >
-          語
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-            Nihongo Quest
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '9px',
+                backgroundColor: 'var(--primary-600)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '18px',
+                flexShrink: 0,
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              語
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: '14.5px',
+                  fontWeight: 800,
+                  color: 'var(--text-main)',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.2,
+                }}
+              >
+                Nihongo Quest
+              </div>
+              <div
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: 600,
+                  color: 'var(--primary-600)',
+                  marginTop: '1px',
+                }}
+              >
+                JN60101 Exam Trainer
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--primary-600)', marginTop: '2px' }}>
-            JN60101 Exam Trainer
-          </div>
+
+          {/* Close button for Mobile / Drawer */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="btn-outline"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                width: '30px',
+                height: '30px',
+                borderRadius: '6px',
+              }}
+              title="ปิดเมนู"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
-      </div>
 
       {/* Navigation Groups */}
       <div
@@ -199,7 +253,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveTab(item.id)}
+                    onClick={() => handleItemClick(item.id)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -295,5 +349,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         </div>
       </div>
     </aside>
-  );
+  </>
+);
 };

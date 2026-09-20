@@ -351,7 +351,7 @@ export const SpeedVocabTrainer: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', maxWidth: '640px', margin: '0 auto' }}>
+            <div className="choice-grid-4">
               {options.map((opt) => {
                 const isSelected = selectedOptionId === opt.id;
                 const isCorrect = opt.id === currentItem.id;

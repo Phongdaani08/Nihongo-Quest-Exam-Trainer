@@ -1296,7 +1296,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                     </div>
                   )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', maxWidth: '600px', margin: '0 auto' }}>
+                  <div className="choice-grid-4">
                     {sec2Items[sec2CurrentIndex].options.map((opt: any) => {
                       let btnBg = 'var(--bg-surface)';
                       let btnBorder = 'var(--border-strong)';
@@ -1426,7 +1426,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '28px', alignItems: 'center' }}>
+              <div className="visual-qa-grid">
                 {/* Clean Photo without Text */}
                 <div style={{
                   border: '1px solid var(--border-subtle)',
