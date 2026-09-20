@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, CheckCircle2, XCircle, RotateCcw, ArrowRight, Shuffle, AlertCircle } from 'lucide-react';
+import { Volume2, CheckCircle2, XCircle, RotateCcw, ArrowRight, Shuffle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Vocabulary } from '../types';
 import { fetchVocabularies } from '../services/api';
 import { playJapaneseAudio, playThaiAudio } from '../utils/speech';
@@ -14,6 +14,16 @@ export const SpeedVocabTrainer: React.FC = () => {
   const [score, setScore] = useState<{ correct: number; total: number; streak: number }>({ correct: 0, total: 0, streak: 0 });
   const [options, setOptions] = useState<Vocabulary[]>([]);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+
+  // Choice Reveal Mode (Instant vs Concealed Active Recall)
+  const [choiceRevealMode, setChoiceRevealMode] = useState<'instant' | 'hidden'>(() => {
+    return (localStorage.getItem('nihongo_endless_choice_mode') as 'instant' | 'hidden') || 'instant';
+  });
+  const [isChoiceRevealed, setIsChoiceRevealed] = useState<boolean>(false);
+
+  useEffect(() => {
+    localStorage.setItem('nihongo_endless_choice_mode', choiceRevealMode);
+  }, [choiceRevealMode]);
 
   useEffect(() => {
     loadVocabs();
@@ -30,6 +40,7 @@ export const SpeedVocabTrainer: React.FC = () => {
     setCurrentIndex(0);
     setShowAnswer(false);
     setSelectedOptionId(null);
+    setIsChoiceRevealed(false);
     if (shuffled.length > 0) {
       generateOptions(shuffled[0], shuffled);
     }
@@ -74,6 +85,7 @@ export const SpeedVocabTrainer: React.FC = () => {
     setCurrentIndex(nextIndex);
     setShowAnswer(false);
     setSelectedOptionId(null);
+    setIsChoiceRevealed(false);
     if (vocabs[nextIndex]) {
       generateOptions(vocabs[nextIndex], vocabs);
     }
@@ -81,6 +93,7 @@ export const SpeedVocabTrainer: React.FC = () => {
 
   const handleRestart = () => {
     setScore({ correct: 0, total: 0, streak: 0 });
+    setIsChoiceRevealed(false);
     loadVocabs();
   };
 
@@ -129,6 +142,27 @@ export const SpeedVocabTrainer: React.FC = () => {
               {ch.label}
             </button>
           ))}
+        </div>
+
+        {/* Choice Reveal Mode Switcher */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--bg-subtle)', padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>ตัวเลือก:</span>
+          <button
+            onClick={() => { setChoiceRevealMode('instant'); setIsChoiceRevealed(false); }}
+            className={choiceRevealMode === 'instant' ? 'btn-primary' : 'btn-outline'}
+            style={{ padding: '3px 8px', fontSize: '11px', borderRadius: 'var(--radius-sm)' }}
+            title="แสดงตัวเลือก 4 ชอยส์ทันที"
+          >
+            <Eye size={11} /> แสดงชอยส์ทันที
+          </button>
+          <button
+            onClick={() => { setChoiceRevealMode('hidden'); setIsChoiceRevealed(false); }}
+            className={choiceRevealMode === 'hidden' ? 'btn-primary' : 'btn-outline'}
+            style={{ padding: '3px 8px', fontSize: '11px', borderRadius: 'var(--radius-sm)' }}
+            title="ซ่อนตัวเลือกเพื่อฝึกนึกคำตอบปากเปล่าก่อน"
+          >
+            <EyeOff size={11} /> ซ่อนชอยส์ฝึกจำ
+          </button>
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -243,82 +277,156 @@ export const SpeedVocabTrainer: React.FC = () => {
             </div>
           )}
 
-          {/* Answer Options */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', maxWidth: '640px', margin: '0 auto' }}>
-            {options.map((opt) => {
-              const isSelected = selectedOptionId === opt.id;
-              const isCorrect = opt.id === currentItem.id;
-              let btnStyle: React.CSSProperties = {
-                padding: '14px 18px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-strong)',
-                backgroundColor: 'var(--bg-surface)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                transition: 'all 0.15s ease',
-              };
+          {/* Active Recall Concealed Card OR 4 Answer Options */}
+          {choiceRevealMode === 'hidden' && !isChoiceRevealed && !showAnswer ? (
+            <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+              <div
+                onClick={() => setIsChoiceRevealed(true)}
+                style={{
+                  padding: '32px 24px',
+                  backgroundColor: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-lg)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--primary-300)';
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
+                  e.currentTarget.style.transform = 'none';
+                }}
+              >
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '4px 12px',
+                  borderRadius: '9999px',
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1px solid var(--border-subtle)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                }}>
+                  <EyeOff size={13} color="var(--primary-600)" />
+                  <span>ฝึกตอบปากเปล่า (Active Recall)</span>
+                </div>
 
-              if (showAnswer) {
-                if (isCorrect) {
-                  btnStyle.backgroundColor = 'var(--success-50)';
-                  btnStyle.borderColor = 'var(--success-border)';
-                  btnStyle.color = 'var(--success-600)';
-                } else if (isSelected) {
-                  btnStyle.backgroundColor = 'var(--danger-50)';
-                  btnStyle.borderColor = 'var(--danger-border)';
-                  btnStyle.color = 'var(--danger-600)';
-                }
-              }
+                <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '380px', lineHeight: 1.5 }}>
+                  นึกคำศัพท์ภาษาญี่ปุ่นและออกเสียงด้วยตนเองก่อนเปิดดูตัวเลือก
+                </div>
 
-              return (
-                <div
-                  key={opt.id}
-                  onClick={() => !showAnswer && handleSelectOption(opt)}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsChoiceRevealed(true);
+                  }}
+                  className="btn-primary"
                   style={{
-                    ...btnStyle,
-                    cursor: showAnswer ? 'default' : 'pointer',
+                    padding: '10px 24px',
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: '0 2px 8px rgba(0, 82, 204, 0.15)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '4px',
                   }}
                 >
-                  <div style={{ textAlign: 'left', flex: 1 }}>
-                    <div style={{ fontSize: '16px', fontWeight: 700 }}>
-                      {opt.word_romaji}
+                  <Eye size={16} /> แตะเพื่อแสดงตัวเลือก (4 ชอยส์)
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', maxWidth: '640px', margin: '0 auto' }}>
+              {options.map((opt) => {
+                const isSelected = selectedOptionId === opt.id;
+                const isCorrect = opt.id === currentItem.id;
+                let btnStyle: React.CSSProperties = {
+                  padding: '14px 18px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-strong)',
+                  backgroundColor: 'var(--bg-surface)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'all 0.15s ease',
+                };
+
+                if (showAnswer) {
+                  if (isCorrect) {
+                    btnStyle.backgroundColor = 'var(--success-50)';
+                    btnStyle.borderColor = 'var(--success-border)';
+                    btnStyle.color = 'var(--success-600)';
+                  } else if (isSelected) {
+                    btnStyle.backgroundColor = 'var(--danger-50)';
+                    btnStyle.borderColor = 'var(--danger-border)';
+                    btnStyle.color = 'var(--danger-600)';
+                  }
+                }
+
+                return (
+                  <div
+                    key={opt.id}
+                    onClick={() => !showAnswer && handleSelectOption(opt)}
+                    style={{
+                      ...btnStyle,
+                      cursor: showAnswer ? 'default' : 'pointer',
+                    }}
+                  >
+                    <div style={{ textAlign: 'left', flex: 1 }}>
+                      <div style={{ fontSize: '16px', fontWeight: 700 }}>
+                        {opt.word_romaji}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                        {opt.word_kana} {opt.word_kanji ? `(${opt.word_kanji})` : ''}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                      {opt.word_kana} {opt.word_kanji ? `(${opt.word_kanji})` : ''}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playJapaneseAudio(opt.word_kana);
+                        }}
+                        title="กดฟังเสียงอ่านภาษาญี่ปุ่น"
+                        style={{
+                          padding: '6px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-subtle)',
+                          backgroundColor: 'var(--bg-surface)',
+                          color: 'var(--primary-700)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Volume2 size={16} />
+                      </button>
+
+                      {showAnswer && isCorrect && <CheckCircle2 size={20} color="var(--success-600)" />}
+                      {showAnswer && isSelected && !isCorrect && <XCircle size={20} color="var(--danger-600)" />}
                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        playJapaneseAudio(opt.word_kana);
-                      }}
-                      title="กดฟังเสียงอ่านภาษาญี่ปุ่น"
-                      style={{
-                        padding: '6px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-subtle)',
-                        backgroundColor: 'var(--bg-surface)',
-                        color: 'var(--primary-700)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Volume2 size={16} />
-                    </button>
-
-                    {showAnswer && isCorrect && <CheckCircle2 size={20} color="var(--success-600)" />}
-                    {showAnswer && isSelected && !isCorrect && <XCircle size={20} color="var(--danger-600)" />}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Answer Reveal & Next Button */}
           {showAnswer && (

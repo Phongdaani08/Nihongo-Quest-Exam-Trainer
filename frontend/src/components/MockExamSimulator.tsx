@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Timer, Infinity as InfinityIcon, CheckCircle2, ArrowRight, RotateCcw, AlertCircle, Volume2, Play, ShieldCheck, Sparkles } from 'lucide-react';
+import { Timer, Infinity as InfinityIcon, CheckCircle2, ArrowRight, RotateCcw, AlertCircle, Volume2, Play, ShieldCheck, Sparkles, Eye, EyeOff, Plus, Edit2, Trash2, BookOpen } from 'lucide-react';
 import { playJapaneseAudio, playThaiAudio } from '../utils/speech';
 import { fallbackVocabs, submitExamResult } from '../services/api';
 import { allSection3Pool, VisualQuestionItem } from './VisualQAArena';
+import { CustomPracticePreset, defaultPresets, PresetEditorModal } from './CustomPresetManagerModal';
 
 interface MockExamProps {
   initialMode?: 'timed_3min' | 'endless_infinite';
@@ -40,6 +41,79 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
     streak: 0,
   });
 
+  // Endless Mode: Choice Visibility Setting ('instant' | 'hidden')
+  const [choiceRevealMode, setChoiceRevealMode] = useState<'instant' | 'hidden'>(() => {
+    return (localStorage.getItem('nihongo_endless_choice_mode') as any) || 'instant';
+  });
+  const [isChoiceRevealed, setIsChoiceRevealed] = useState<boolean>(false);
+
+  // Endless Mode: Custom Scope Presets
+  const [presets, setPresets] = useState<CustomPracticePreset[]>(() => {
+    const saved = localStorage.getItem('nihongo_custom_practice_presets');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse custom presets', e);
+      }
+    }
+    return defaultPresets;
+  });
+
+  const [activePresetId, setActivePresetId] = useState<string>(() => {
+    return localStorage.getItem('nihongo_active_preset_id') || 'preset_all';
+  });
+
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState<boolean>(false);
+  const [editingPreset, setEditingPreset] = useState<CustomPracticePreset | null>(null);
+  const [hoveredVocabPresetId, setHoveredVocabPresetId] = useState<string | null>(null);
+  const [hoveredSec3PresetId, setHoveredSec3PresetId] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('nihongo_endless_choice_mode', choiceRevealMode);
+  }, [choiceRevealMode]);
+
+  useEffect(() => {
+    localStorage.setItem('nihongo_custom_practice_presets', JSON.stringify(presets));
+  }, [presets]);
+
+  useEffect(() => {
+    localStorage.setItem('nihongo_active_preset_id', activePresetId);
+  }, [activePresetId]);
+
+  // Handlers for Preset Management
+  const handleOpenCreatePreset = () => {
+    setEditingPreset(null);
+    setIsPresetModalOpen(true);
+  };
+
+  const handleOpenEditPreset = (preset: CustomPracticePreset, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingPreset(preset);
+    setIsPresetModalOpen(true);
+  };
+
+  const handleSavePreset = (preset: CustomPracticePreset) => {
+    setPresets((prev) => {
+      const exists = prev.some((p) => p.id === preset.id);
+      if (exists) {
+        return prev.map((p) => (p.id === preset.id ? preset : p));
+      } else {
+        return [...prev, preset];
+      }
+    });
+    setActivePresetId(preset.id);
+  };
+
+  const handleDeletePreset = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPresets((prev) => prev.filter((p) => p.id !== id));
+    if (activePresetId === id) {
+      setActivePresetId('preset_all');
+    }
+  };
+
   // Final Report for Timed Mode
   const [finalReport, setFinalReport] = useState<any>(null);
 
@@ -70,22 +144,34 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
   const handleStartExam = (mode: 'timed_3min' | 'endless_infinite' = examMode) => {
     setExamMode(mode);
-    // Shuffle 5 random vocab for Section 2
-    const shuffledVocab = [...fallbackVocabs].sort(() => 0.5 - Math.random());
+
+    const activePreset = presets.find((p) => p.id === activePresetId) || defaultPresets[0];
+
+    // Section 2: Pick from active preset's vocabulary list (if in Endless Mode)
+    const activeVocabs = fallbackVocabs.filter((v) =>
+      mode === 'endless_infinite' && activePreset.sec2VocabIds && activePreset.sec2VocabIds.length > 0
+        ? activePreset.sec2VocabIds.includes(v.id)
+        : true
+    );
+    const poolSec2 = activeVocabs.length >= 2 ? activeVocabs : fallbackVocabs;
+    const shuffledVocab = [...poolSec2].sort(() => 0.5 - Math.random());
     const picked5Vocab = shuffledVocab.slice(0, mode === 'endless_infinite' ? 50 : 5).map((v) => {
       const distractors = fallbackVocabs.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
       const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
       return { item: v, options: opts };
     });
 
-    // Pick 1 of each of the 5 types for Section 3
-    const shuffledSec3: VisualQuestionItem[] = [
-      ...allSection3Pool.filter((q) => q.typeId === 1).sort(() => 0.5 - Math.random()).slice(0, mode === 'endless_infinite' ? 10 : 1),
-      ...allSection3Pool.filter((q) => q.typeId === 2).sort(() => 0.5 - Math.random()).slice(0, mode === 'endless_infinite' ? 4 : 1),
-      ...allSection3Pool.filter((q) => q.typeId === 3).sort(() => 0.5 - Math.random()).slice(0, mode === 'endless_infinite' ? 7 : 1),
-      ...allSection3Pool.filter((q) => q.typeId === 4).sort(() => 0.5 - Math.random()).slice(0, mode === 'endless_infinite' ? 4 : 1),
-      ...allSection3Pool.filter((q) => q.typeId === 5).sort(() => 0.5 - Math.random()).slice(0, mode === 'endless_infinite' ? 4 : 1),
-    ].sort(() => 0.5 - Math.random());
+    // Section 3: Pick from active preset's granular question items (if in Endless Mode)
+    const activeSec3QuestionIds =
+      mode === 'endless_infinite' && activePreset.sec3QuestionIds && activePreset.sec3QuestionIds.length > 0
+        ? activePreset.sec3QuestionIds
+        : allSection3Pool
+            .filter((q) => (activePreset.sec3TypeIds || [1, 2, 3, 4, 5]).includes(q.typeId))
+            .map((q) => q.id);
+
+    const sec3PoolFiltered = allSection3Pool.filter((q) => activeSec3QuestionIds.includes(q.id));
+    const activeSec3Pool = sec3PoolFiltered.length > 0 ? sec3PoolFiltered : allSection3Pool;
+    const shuffledSec3: VisualQuestionItem[] = [...activeSec3Pool].sort(() => 0.5 - Math.random());
 
     setSec2Items(picked5Vocab);
     setSec2CurrentIndex(0);
@@ -101,6 +187,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
     setSec1Step(1);
     setTimeLeftSeconds(180);
     setCurrentSection(1);
+    setIsChoiceRevealed(false);
     setExamState('running');
   };
 
@@ -152,6 +239,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
   const handleNextSec2 = () => {
     setSec2Feedback(null);
+    setIsChoiceRevealed(false);
     if (examMode === 'endless_infinite') {
       const nextIdx = (sec2CurrentIndex + 1) % sec2Items.length;
       setSec2CurrentIndex(nextIdx);
@@ -189,6 +277,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
   const handleNextSec3 = () => {
     setSec3Feedback(null);
+    setIsChoiceRevealed(false);
     if (examMode === 'endless_infinite') {
       const nextIdx = (sec3CurrentIndex + 1) % sec3Items.length;
       setSec3CurrentIndex(nextIdx);
@@ -292,7 +381,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
       {/* IDLE VIEW: DEDICATED FOR TIMED 3-MIN EXAM */}
       {examState === 'idle' && examMode === 'timed_3min' && (
-        <div className="card" style={{ padding: '36px 32px', backgroundColor: 'var(--bg-surface)', maxWidth: '780px', margin: '0 auto', width: '100%' }}>
+        <div className="card" style={{ padding: '36px 32px', backgroundColor: 'var(--bg-surface)', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)' }}>
             <div
               style={{
@@ -393,7 +482,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
       {/* IDLE VIEW: DEDICATED FOR ENDLESS PRACTICE */}
       {examState === 'idle' && examMode === 'endless_infinite' && (
-        <div className="card" style={{ padding: '36px 32px', backgroundColor: 'var(--bg-surface)', maxWidth: '780px', margin: '0 auto', width: '100%' }}>
+        <div className="card" style={{ padding: '36px 32px', backgroundColor: 'var(--bg-surface)', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)' }}>
             <div
               style={{
@@ -448,7 +537,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
           </div>
 
           {/* Status Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', backgroundColor: 'var(--success-50)', borderRadius: '8px', border: '1px solid var(--success-border)', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', backgroundColor: 'var(--success-50)', borderRadius: '8px', border: '1px solid var(--success-border)', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Sparkles size={20} color="var(--success-600)" />
               <div>
@@ -459,6 +548,392 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
             <div style={{ fontSize: '12px', color: 'var(--success-700)', fontWeight: 600 }}>
               คะแนนปัจจุบัน: {endlessStats.correct} / {endlessStats.total}
+            </div>
+          </div>
+
+          {/* Choice Visibility Mode Setting (Only for Sec 2 & 3 in Endless) */}
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye size={15} color="var(--primary-600)" />
+              <span>รูปแบบการแสดงตัวเลือก (เฉพาะส่วนที่ 2 และ 3):</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setChoiceRevealMode('instant')}
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: choiceRevealMode === 'instant' ? '2px solid var(--primary-600)' : '1px solid var(--border-strong)',
+                  backgroundColor: choiceRevealMode === 'instant' ? 'var(--primary-50)' : 'var(--bg-surface)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: choiceRevealMode === 'instant' ? '0 0 0 1px var(--primary-600)' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: choiceRevealMode === 'instant' ? 'var(--primary-700)' : 'var(--text-main)' }}>
+                  <Eye size={15} /> แสดงชอยส์ทันที (Default)
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                  แสดงโจทย์พร้อม 4 ตัวเลือกทันทีเมื่อเริ่มแต่ละข้อ
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setChoiceRevealMode('hidden')}
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: choiceRevealMode === 'hidden' ? '2px solid var(--success-600)' : '1px solid var(--border-strong)',
+                  backgroundColor: choiceRevealMode === 'hidden' ? 'var(--success-50)' : 'var(--bg-surface)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  boxShadow: choiceRevealMode === 'hidden' ? '0 0 0 1px var(--success-600)' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: choiceRevealMode === 'hidden' ? 'var(--success-700)' : 'var(--text-main)' }}>
+                  <EyeOff size={15} /> ซ่อนชอยส์ฝึกจำปากเปล่า (Oral Drill)
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                  ซ่อนตัวเลือกไว้ก่อน เพื่อฝึกนึกและพูดด้วยตนเองก่อนเปิดดู
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* CUSTOM PRESETS & VOCABULARY SELECTION TABLE */}
+          <div style={{ marginBottom: '28px', borderTop: '1px solid var(--border-subtle)', paddingTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <BookOpen size={16} color="var(--primary-600)" />
+                  <span>เลือกคำศัพท์ / ข้อสอบที่ต้องการฝึก (Custom Practice Presets)</span>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                  เลือกชุดคำศัพท์หรือภาพสถานการณ์ที่ต้องการเน้นฝึกซ้อม ระบบจะสุ่มเฉพาะรายการที่กำหนดไว้
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenCreatePreset}
+                className="btn-primary"
+                style={{
+                  padding: '8px 14px',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  borderRadius: 'var(--radius-md)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Plus size={15} /> สร้างพรีเซ็ตใหม่
+              </button>
+            </div>
+
+            {/* PRESETS TABLE */}
+            <div
+              style={{
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-surface)',
+                overflow: 'visible',
+              }}
+            >
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '65px', textAlign: 'center' }}>
+                      เลือกใช้
+                    </th>
+                    <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '110px' }}>
+                      ประเภท
+                    </th>
+                    <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '200px' }}>
+                      ชื่อชุดพรีเซ็ต
+                    </th>
+                    <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '90px', textAlign: 'center' }}>
+                      จำนวนคำ
+                    </th>
+                    <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '260px' }}>
+                      ส่วนที่ 2: คำศัพท์ (ชี้เมาส์ดู)
+                    </th>
+                    <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)', width: '220px' }}>
+                      ส่วนที่ 3: ภาพคำถาม
+                    </th>
+                    <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '80px', textAlign: 'center' }}>
+                      จัดการ
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {presets.map((preset) => {
+                    const isActive = activePresetId === preset.id;
+                    const matchedVocabs = fallbackVocabs.filter((v) => preset.sec2VocabIds.includes(v.id));
+                    const previewVocabs = matchedVocabs.slice(0, 4);
+                    const remainingVocabCount = matchedVocabs.length - 4;
+
+                    // Section 3 item count
+                    const sec3QCount = preset.sec3QuestionIds && preset.sec3QuestionIds.length > 0
+                      ? preset.sec3QuestionIds.length
+                      : allSection3Pool.filter((q) => (preset.sec3TypeIds || []).includes(q.typeId)).length;
+
+                    const sec3TypesMap: Record<number, string> = {
+                      1: 'ถามสิ่งของ',
+                      2: 'ถามประเทศ',
+                      3: 'ถามอาชีพ',
+                      4: 'ถามนิตยสาร',
+                      5: 'ถามสถานที่',
+                    };
+
+                    return (
+                      <tr
+                        key={preset.id}
+                        onClick={() => setActivePresetId(preset.id)}
+                        style={{
+                          borderBottom: '1px solid var(--border-subtle)',
+                          backgroundColor: isActive ? 'var(--primary-50)' : 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease',
+                        }}
+                      >
+                        {/* SELECT RADIO */}
+                        <td style={{ padding: '14px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '50%',
+                                border: isActive ? '5.5px solid var(--primary-600)' : '1.5px solid var(--border-strong)',
+                                backgroundColor: 'var(--bg-surface)',
+                                boxSizing: 'border-box',
+                              }}
+                            />
+                          </div>
+                        </td>
+
+                        {/* PRESET TYPE BADGE */}
+                        <td style={{ padding: '14px 12px', verticalAlign: 'middle' }}>
+                          {!preset.isCustom ? (
+                            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontWeight: 700, display: 'inline-block' }}>
+                              ระบบ (Default)
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--success-50)', border: '1px solid var(--success-border)', color: 'var(--success-700)', fontWeight: 700, display: 'inline-block' }}>
+                              กำหนดเอง
+                            </span>
+                          )}
+                        </td>
+
+                        {/* PRESET NAME */}
+                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                          <div style={{ fontWeight: 700, color: isActive ? 'var(--primary-700)' : 'var(--text-main)', fontSize: '13.5px', lineHeight: 1.4 }}>
+                            {preset.name}
+                          </div>
+                        </td>
+
+                        {/* VOCABULARY COUNT COLUMN */}
+                        <td style={{ padding: '14px 12px', verticalAlign: 'middle', textAlign: 'center' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-main)' }}>
+                            {matchedVocabs.length} คำ
+                          </span>
+                        </td>
+
+                        {/* SECTION 2 VOCAB HOVER PREVIEW */}
+                        <td
+                          style={{ padding: '14px 16px', verticalAlign: 'middle', position: 'relative' }}
+                          onMouseEnter={() => setHoveredVocabPresetId(preset.id)}
+                          onMouseLeave={() => setHoveredVocabPresetId(null)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            {previewVocabs.map((v) => (
+                              <span
+                                key={v.id}
+                                style={{
+                                  fontSize: '11.5px',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'var(--bg-app)',
+                                  border: '1px solid var(--border-subtle)',
+                                  color: 'var(--text-main)',
+                                }}
+                              >
+                                {v.word_romaji}
+                              </span>
+                            ))}
+                            {remainingVocabCount > 0 && (
+                              <span style={{ fontSize: '11px', color: 'var(--primary-600)', fontWeight: 700, backgroundColor: 'var(--primary-100)', padding: '2px 7px', borderRadius: '4px' }}>
+                                +{remainingVocabCount} คำ
+                              </span>
+                            )}
+                          </div>
+
+                          {/* INTERACTIVE HOVER SCROLLABLE POPOVER (Section 2) */}
+                          {hoveredVocabPresetId === preset.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseEnter={() => setHoveredVocabPresetId(preset.id)}
+                              onMouseLeave={() => setHoveredVocabPresetId(null)}
+                              style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 4px)',
+                                left: '0',
+                                zIndex: 9999,
+                                width: '340px',
+                                maxHeight: '240px',
+                                overflowY: 'auto',
+                                backgroundColor: 'var(--bg-surface)',
+                                border: '1.5px solid var(--border-strong)',
+                                borderRadius: 'var(--radius-md)',
+                                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.22)',
+                                padding: '12px 14px',
+                                pointerEvents: 'auto',
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid var(--border-subtle)' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>
+                                  รายการคำศัพท์ทั้งหมด ({matchedVocabs.length} คำ):
+                                </span>
+                                <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>เลื่อนเพื่อดูทั้งหมด</span>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                {matchedVocabs.map((v, i) => (
+                                  <div key={v.id} style={{ fontSize: '11.5px', display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '2px 0', borderBottom: '1px dotted var(--border-subtle)' }}>
+                                    <span style={{ fontWeight: 700, color: 'var(--primary-700)' }}>
+                                      {i + 1}. {v.word_romaji} <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 400 }}>({v.word_kana})</span>
+                                    </span>
+                                    <span style={{ color: 'var(--text-secondary)', textAlign: 'right', fontSize: '11.5px' }}>
+                                      {v.meaning_th}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* SECTION 3 VISUAL TYPES HOVER PREVIEW */}
+                        <td
+                          style={{ padding: '12px 14px', verticalAlign: 'middle', position: 'relative' }}
+                          onMouseEnter={() => setHoveredSec3PresetId(preset.id)}
+                          onMouseLeave={() => setHoveredSec3PresetId(null)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--bg-subtle)', color: 'var(--text-secondary)' }}>
+                              {sec3QCount} ข้อ
+                            </span>
+                            {preset.sec3TypeIds.slice(0, 2).map((tId) => (
+                              <span
+                                key={tId}
+                                style={{
+                                  fontSize: '11px',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'var(--bg-app)',
+                                  border: '1px solid var(--border-subtle)',
+                                  color: 'var(--text-main)',
+                                }}
+                              >
+                                {sec3TypesMap[tId]}
+                              </span>
+                            ))}
+                            {preset.sec3TypeIds.length > 2 && (
+                              <span style={{ fontSize: '11px', color: 'var(--primary-600)', fontWeight: 700, backgroundColor: 'var(--primary-100)', padding: '2px 6px', borderRadius: '4px' }}>
+                                +{preset.sec3TypeIds.length - 2}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* INTERACTIVE HOVER SCROLLABLE POPOVER (Section 3) */}
+                          {hoveredSec3PresetId === preset.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseEnter={() => setHoveredSec3PresetId(preset.id)}
+                              onMouseLeave={() => setHoveredSec3PresetId(null)}
+                              style={{
+                                position: 'absolute',
+                                bottom: 'calc(100% + 4px)',
+                                left: '0',
+                                zIndex: 9999,
+                                width: '280px',
+                                maxHeight: '220px',
+                                overflowY: 'auto',
+                                backgroundColor: 'var(--bg-surface)',
+                                border: '1.5px solid var(--border-strong)',
+                                borderRadius: 'var(--radius-md)',
+                                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.22)',
+                                padding: '12px 14px',
+                                pointerEvents: 'auto',
+                              }}
+                            >
+                              <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid var(--border-subtle)' }}>
+                                รูปแบบภาพคำถามในพรีเซ็ต ({sec3QCount} ข้อ):
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {preset.sec3TypeIds.map((tId) => (
+                                  <div key={tId} style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: 600 }}>
+                                    ✓ {sec3TypesMap[tId]}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* ACTIONS */}
+                        <td style={{ padding: '12px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenEditPreset(preset, e)}
+                              title="แก้ไขคำศัพท์และสถานการณ์ในพรีเซ็ตนี้"
+                              style={{
+                                padding: '5px',
+                                borderRadius: 'var(--radius-sm)',
+                                border: '1px solid var(--border-subtle)',
+                                backgroundColor: 'var(--bg-surface)',
+                                color: 'var(--primary-700)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Edit2 size={13} />
+                            </button>
+
+                            {preset.isCustom && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeletePreset(preset.id, e)}
+                                title="ลบพรีเซ็ตนี้"
+                                style={{
+                                  padding: '5px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  border: '1px solid var(--border-subtle)',
+                                  backgroundColor: 'var(--bg-surface)',
+                                  color: 'var(--danger-600)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -502,26 +977,51 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
           {/* REAL-TIME SECTION SWITCHER BAR (Always Available During Exam!) */}
           <div className="card" style={{ padding: '12px 18px', backgroundColor: 'var(--bg-surface)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>
-                แถบเลือกส่วนที่กำลังสอบ (สลับได้ตลอดเวลา):
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                  แถบเลือกส่วนที่กำลังสอบ:
+                </span>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {[
-                  { id: 1, label: 'ส่วนที่ 1: แนะนำตัว (5 ท่อน)' },
-                  { id: 2, label: 'ส่วนที่ 2: แปลไทย-ญี่ปุ่น' },
-                  { id: 3, label: 'ส่วนที่ 3: ตอบภาพ 5 ข้อ' },
-                ].map((sec) => (
-                  <button
-                    key={sec.id}
-                    onClick={() => setCurrentSection(sec.id as any)}
-                    className={currentSection === sec.id ? 'btn-primary' : 'btn-outline'}
-                    style={{ padding: '6px 14px', fontSize: '12px', borderRadius: 'var(--radius-md)' }}
-                  >
-                    {sec.label}
-                  </button>
-                ))}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[
+                    { id: 1, label: 'ส่วนที่ 1: แนะนำตัว (5 ท่อน)' },
+                    { id: 2, label: 'ส่วนที่ 2: แปลไทย-ญี่ปุ่น' },
+                    { id: 3, label: 'ส่วนที่ 3: ตอบภาพ 5 ข้อ' },
+                  ].map((sec) => (
+                    <button
+                      key={sec.id}
+                      onClick={() => setCurrentSection(sec.id as any)}
+                      className={currentSection === sec.id ? 'btn-primary' : 'btn-outline'}
+                      style={{ padding: '6px 14px', fontSize: '12px', borderRadius: 'var(--radius-md)' }}
+                    >
+                      {sec.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Endless Quick Mode Switcher */}
+              {examMode === 'endless_infinite' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--bg-subtle)', padding: '4px 8px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>ตัวเลือก:</span>
+                  <button
+                    onClick={() => { setChoiceRevealMode('instant'); setIsChoiceRevealed(false); }}
+                    className={choiceRevealMode === 'instant' ? 'btn-primary' : 'btn-outline'}
+                    style={{ padding: '3px 8px', fontSize: '11px', borderRadius: 'var(--radius-sm)' }}
+                    title="แสดงตัวเลือก 4 ชอยส์ทันที"
+                  >
+                    <Eye size={11} /> แสดงชอยส์ทันที
+                  </button>
+                  <button
+                    onClick={() => { setChoiceRevealMode('hidden'); setIsChoiceRevealed(false); }}
+                    className={choiceRevealMode === 'hidden' ? 'btn-primary' : 'btn-outline'}
+                    style={{ padding: '3px 8px', fontSize: '11px', borderRadius: 'var(--radius-sm)' }}
+                    title="ซ่อนตัวเลือกเพื่อฝึกนึกคำตอบปากเปล่าก่อน"
+                  >
+                    <EyeOff size={11} /> ซ่อนชอยส์ฝึกจำ
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -673,117 +1173,194 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                 "{sec2Items[sec2CurrentIndex].item.meaning_th}"
               </div>
 
-              {/* ERROR NOTIFICATION BANNER */}
-              {sec2Feedback && !sec2Feedback.isCorrect && (
-                <div style={{
-                  maxWidth: '600px',
-                  margin: '0 auto 16px',
-                  padding: '12px 16px',
-                  backgroundColor: 'var(--danger-50)',
-                  border: '1.5px solid var(--danger-border)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  color: 'var(--danger-600)',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  textAlign: 'left',
-                }}>
-                  <AlertCircle size={20} />
-                  <div>
-                    ❌ ตอบผิด! คุณตอบ: "{sec2Feedback.selected}" $\rightarrow$ คำตอบที่ถูกต้องคือ: <strong>{sec2Feedback.correct}</strong>
-                  </div>
-                </div>
-              )}
+              {/* CONCEALED ORAL DRILL PROMPT (If hidden mode active and choice not yet revealed) */}
+              {examMode === 'endless_infinite' && choiceRevealMode === 'hidden' && !isChoiceRevealed && !sec2Feedback ? (
+                <div style={{ maxWidth: '600px', margin: '0 auto 16px' }}>
+                  <div
+                    onClick={() => setIsChoiceRevealed(true)}
+                    style={{
+                      padding: '32px 24px',
+                      backgroundColor: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-lg)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '12px',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--primary-300)';
+                      e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                      e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
+                      e.currentTarget.style.transform = 'none';
+                    }}
+                  >
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '4px 12px',
+                      borderRadius: '9999px',
+                      backgroundColor: 'var(--bg-surface)',
+                      border: '1px solid var(--border-subtle)',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                    }}>
+                      <EyeOff size={13} color="var(--primary-600)" />
+                      <span>ฝึกตอบปากเปล่า (Active Recall)</span>
+                    </div>
 
-              {/* SUCCESS NOTIFICATION BANNER */}
-              {sec2Feedback && sec2Feedback.isCorrect && (
-                <div style={{
-                  maxWidth: '600px',
-                  margin: '0 auto 16px',
-                  padding: '12px 16px',
-                  backgroundColor: 'var(--success-50)',
-                  border: '1.5px solid var(--success-border)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  color: 'var(--success-600)',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  textAlign: 'left',
-                }}>
-                  <CheckCircle2 size={20} />
-                  <div>
-                    ✓ ถูกต้อง! <strong>{sec2Feedback.correct}</strong> = {sec2Items[sec2CurrentIndex].item.meaning_th}
-                  </div>
-                </div>
-              )}
+                    <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '380px', lineHeight: 1.5 }}>
+                      นึกคำศัพท์ภาษาญี่ปุ่นและออกเสียงด้วยตนเองก่อนเปิดดูตัวเลือก
+                    </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', maxWidth: '600px', margin: '0 auto' }}>
-                {sec2Items[sec2CurrentIndex].options.map((opt: any) => {
-                  let btnBg = 'var(--bg-surface)';
-                  let btnBorder = 'var(--border-strong)';
-                  if (sec2Feedback) {
-                    if (opt.word_romaji === sec2Feedback.correct) {
-                      btnBg = 'var(--success-50)';
-                      btnBorder = 'var(--success-border)';
-                    } else if (opt.word_romaji === sec2Feedback.selected) {
-                      btnBg = 'var(--danger-50)';
-                      btnBorder = 'var(--danger-border)';
-                    }
-                  }
-
-                  return (
-                    <div
-                      key={opt.id}
-                      onClick={() => !sec2Feedback && handleAnswerSec2(opt.word_romaji)}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsChoiceRevealed(true);
+                      }}
+                      className="btn-primary"
                       style={{
-                        padding: '14px',
-                        borderRadius: 'var(--radius-md)',
-                        border: `1.5px solid ${btnBorder}`,
-                        backgroundColor: btnBg,
-                        fontSize: '15px',
+                        padding: '10px 24px',
+                        fontSize: '13.5px',
                         fontWeight: 700,
-                        textAlign: 'left',
-                        cursor: sec2Feedback ? 'default' : 'pointer',
-                        display: 'flex',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: '0 2px 8px rgba(0, 82, 204, 0.15)',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
+                        gap: '8px',
+                        marginTop: '4px',
                       }}
                     >
-                      <div style={{ flex: 1 }}>
-                        <div>{opt.word_romaji}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 400 }}>{opt.word_kana}</div>
+                      <Eye size={16} /> แตะเพื่อแสดงตัวเลือก (4 ชอยส์)
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* ERROR NOTIFICATION BANNER */}
+                  {sec2Feedback && !sec2Feedback.isCorrect && (
+                    <div style={{
+                      maxWidth: '600px',
+                      margin: '0 auto 16px',
+                      padding: '12px 16px',
+                      backgroundColor: 'var(--danger-50)',
+                      border: '1.5px solid var(--danger-border)',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      color: 'var(--danger-600)',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      textAlign: 'left',
+                    }}>
+                      <AlertCircle size={20} />
+                      <div>
+                        ❌ ตอบผิด! คุณตอบ: "{sec2Feedback.selected}" $\rightarrow$ คำตอบที่ถูกต้องคือ: <strong>{sec2Feedback.correct}</strong>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          playJapaneseAudio(opt.word_kana);
-                        }}
-                        title="กดฟังเสียงอ่านภาษาญี่ปุ่น"
-                        style={{
-                          padding: '6px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px solid var(--border-subtle)',
-                          backgroundColor: 'var(--bg-surface)',
-                          color: 'var(--primary-700)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginLeft: '8px',
-                        }}
-                      >
-                        <Volume2 size={16} />
-                      </button>
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+
+                  {/* SUCCESS NOTIFICATION BANNER */}
+                  {sec2Feedback && sec2Feedback.isCorrect && (
+                    <div style={{
+                      maxWidth: '600px',
+                      margin: '0 auto 16px',
+                      padding: '12px 16px',
+                      backgroundColor: 'var(--success-50)',
+                      border: '1.5px solid var(--success-border)',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      color: 'var(--success-600)',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      textAlign: 'left',
+                    }}>
+                      <CheckCircle2 size={20} />
+                      <div>
+                        ✓ ถูกต้อง! <strong>{sec2Feedback.correct}</strong> = {sec2Items[sec2CurrentIndex].item.meaning_th}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', maxWidth: '600px', margin: '0 auto' }}>
+                    {sec2Items[sec2CurrentIndex].options.map((opt: any) => {
+                      let btnBg = 'var(--bg-surface)';
+                      let btnBorder = 'var(--border-strong)';
+                      if (sec2Feedback) {
+                        if (opt.word_romaji === sec2Feedback.correct) {
+                          btnBg = 'var(--success-50)';
+                          btnBorder = 'var(--success-border)';
+                        } else if (opt.word_romaji === sec2Feedback.selected) {
+                          btnBg = 'var(--danger-50)';
+                          btnBorder = 'var(--danger-border)';
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => !sec2Feedback && handleAnswerSec2(opt.word_romaji)}
+                          style={{
+                            padding: '14px',
+                            borderRadius: 'var(--radius-md)',
+                            border: `1.5px solid ${btnBorder}`,
+                            backgroundColor: btnBg,
+                            fontSize: '15px',
+                            fontWeight: 700,
+                            textAlign: 'left',
+                            cursor: sec2Feedback ? 'default' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div>{opt.word_romaji}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 400 }}>{opt.word_kana}</div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playJapaneseAudio(opt.word_kana);
+                            }}
+                            title="กดฟังเสียงอ่านภาษาญี่ปุ่น"
+                            style={{
+                              padding: '6px',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid var(--border-subtle)',
+                              backgroundColor: 'var(--bg-surface)',
+                              color: 'var(--primary-700)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginLeft: '8px',
+                            }}
+                          >
+                            <Volume2 size={16} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               {sec2Feedback && (
                 <div style={{ marginTop: '20px' }}>
@@ -876,76 +1453,151 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                     "{sec3Items[sec3CurrentIndex].teacherQuestionRomaji}"
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {sec3Items[sec3CurrentIndex].options.map((opt, idx) => {
-                      let optBg = 'var(--bg-surface)';
-                      let optBorder = 'var(--border-strong)';
-                      if (sec3Feedback) {
-                        if (opt.romaji === sec3Feedback.correct) {
-                          optBg = 'var(--success-50)';
-                          optBorder = 'var(--success-border)';
-                        } else if (opt.romaji === sec3Feedback.selected) {
-                          optBg = 'var(--danger-50)';
-                          optBorder = 'var(--danger-border)';
-                        }
-                      }
+                  {examMode === 'endless_infinite' && choiceRevealMode === 'hidden' && !isChoiceRevealed && !sec3Feedback ? (
+                    <div
+                      onClick={() => setIsChoiceRevealed(true)}
+                      style={{
+                        padding: '32px 20px',
+                        backgroundColor: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-lg)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        minHeight: '220px',
+                        boxShadow: 'var(--shadow-sm)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--primary-300)';
+                        e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                        e.currentTarget.style.backgroundColor = 'var(--bg-subtle)';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '4px 12px',
+                        borderRadius: '9999px',
+                        backgroundColor: 'var(--bg-surface)',
+                        border: '1px solid var(--border-subtle)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: 'var(--text-secondary)',
+                      }}>
+                        <EyeOff size={13} color="var(--primary-600)" />
+                        <span>ฝึกตอบปากเปล่า (Active Recall)</span>
+                      </div>
 
-                      return (
-                        <div
-                          key={idx}
-                          onClick={() => !sec3Feedback && handleAnswerSec3(opt)}
-                          style={{
-                            padding: '12px 16px',
-                            borderRadius: 'var(--radius-md)',
-                            border: `1.5px solid ${optBorder}`,
-                            backgroundColor: optBg,
-                            textAlign: 'left',
-                            fontWeight: 600,
-                            fontSize: '14px',
-                            cursor: sec3Feedback ? 'default' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <div>{opt.romaji}</div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{opt.kana}</div>
-                          </div>
+                      <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 }}>
+                        ดูภาพแล้วลองตอบอาจารย์เป็นภาษาญี่ปุ่นออกเสียงด้วยตนเอง
+                      </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playJapaneseAudio(opt.kana);
-                            }}
-                            title="กดฟังเสียงอ่านประโยคภาษาญี่ปุ่น"
-                            style={{
-                              padding: '6px',
-                              borderRadius: 'var(--radius-sm)',
-                              border: '1px solid var(--border-subtle)',
-                              backgroundColor: 'var(--bg-surface)',
-                              color: 'var(--primary-700)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginLeft: '8px',
-                            }}
-                          >
-                            <Volume2 size={16} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {sec3Feedback && (
-                    <div style={{ marginTop: '16px' }}>
-                      <button onClick={handleNextSec3} className="btn-primary" style={{ padding: '8px 20px' }}>
-                        ข้อถัดไป <ArrowRight size={15} />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsChoiceRevealed(true);
+                        }}
+                        className="btn-primary"
+                        style={{
+                          padding: '10px 22px',
+                          fontSize: '13.5px',
+                          fontWeight: 700,
+                          borderRadius: 'var(--radius-md)',
+                          boxShadow: '0 2px 8px rgba(0, 82, 204, 0.15)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          marginTop: '4px',
+                        }}
+                      >
+                        <Eye size={16} /> แตะเพื่อแสดงตัวเลือก (4 ชอยส์)
                       </button>
                     </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {sec3Items[sec3CurrentIndex].options.map((opt, idx) => {
+                          let optBg = 'var(--bg-surface)';
+                          let optBorder = 'var(--border-strong)';
+                          if (sec3Feedback) {
+                            if (opt.romaji === sec3Feedback.correct) {
+                              optBg = 'var(--success-50)';
+                              optBorder = 'var(--success-border)';
+                            } else if (opt.romaji === sec3Feedback.selected) {
+                              optBg = 'var(--danger-50)';
+                              optBorder = 'var(--danger-border)';
+                            }
+                          }
+
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => !sec3Feedback && handleAnswerSec3(opt)}
+                              style={{
+                                padding: '12px 16px',
+                                borderRadius: 'var(--radius-md)',
+                                border: `1.5px solid ${optBorder}`,
+                                backgroundColor: optBg,
+                                textAlign: 'left',
+                                fontWeight: 600,
+                                fontSize: '14px',
+                                cursor: sec3Feedback ? 'default' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div>{opt.romaji}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{opt.kana}</div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  playJapaneseAudio(opt.kana);
+                                }}
+                                title="กดฟังเสียงอ่านประโยคภาษาญี่ปุ่น"
+                                style={{
+                                  padding: '6px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  border: '1px solid var(--border-subtle)',
+                                  backgroundColor: 'var(--bg-surface)',
+                                  color: 'var(--primary-700)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginLeft: '8px',
+                                }}
+                              >
+                                <Volume2 size={16} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {sec3Feedback && (
+                        <div style={{ marginTop: '16px' }}>
+                          <button onClick={handleNextSec3} className="btn-primary" style={{ padding: '8px 20px' }}>
+                            ข้อถัดไป <ArrowRight size={15} />
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1009,6 +1661,14 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
           </div>
         </div>
       )}
+
+      {/* CUSTOM SCOPE PRESET EDITOR MODAL */}
+      <PresetEditorModal
+        isOpen={isPresetModalOpen}
+        onClose={() => setIsPresetModalOpen(false)}
+        onSave={handleSavePreset}
+        editingPreset={editingPreset}
+      />
     </div>
   );
 };

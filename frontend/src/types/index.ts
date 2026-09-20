@@ -18,6 +18,7 @@ export interface Vocabulary {
   example_jp: string | null;
   example_th: string | null;
   textbook_ref: string;
+  image_url?: string | null;
 }
 
 export interface ExamQuestion {
