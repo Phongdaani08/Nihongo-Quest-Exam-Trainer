@@ -790,19 +790,46 @@ export const VisualQAArena: React.FC = () => {
                 }
 
                 return (
-                  <button
+                  <div
                     key={optIdx}
-                    onClick={() => handleSelectOption(optIdx)}
-                    disabled={showAnswer}
-                    style={optStyle}
+                    onClick={() => !showAnswer && handleSelectOption(optIdx)}
+                    style={{
+                      ...optStyle,
+                      cursor: showAnswer ? 'default' : 'pointer',
+                    }}
                   >
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: '15px' }}>{opt.romaji}</div>
                       <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{opt.kana}</div>
                     </div>
-                    {showAnswer && opt.isCorrect && <CheckCircle2 size={18} color="var(--success-600)" />}
-                    {showAnswer && isSelected && !opt.isCorrect && <XCircle size={18} color="var(--danger-600)" />}
-                  </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playJapaneseAudio(opt.kana);
+                        }}
+                        title="กดฟังเสียงอ่านประโยคภาษาญี่ปุ่น"
+                        style={{
+                          padding: '6px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-subtle)',
+                          backgroundColor: '#ffffff',
+                          color: 'var(--primary-700)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Volume2 size={16} />
+                      </button>
+
+                      {showAnswer && opt.isCorrect && <CheckCircle2 size={18} color="var(--success-600)" />}
+                      {showAnswer && isSelected && !opt.isCorrect && <XCircle size={18} color="var(--danger-600)" />}
+                    </div>
+                  </div>
                 );
               })}
             </div>

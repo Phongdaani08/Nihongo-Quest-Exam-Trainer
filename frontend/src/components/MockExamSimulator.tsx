@@ -599,10 +599,9 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                   }
 
                   return (
-                    <button
+                    <div
                       key={opt.id}
-                      onClick={() => handleAnswerSec2(opt.word_romaji)}
-                      disabled={sec2Feedback !== null}
+                      onClick={() => !sec2Feedback && handleAnswerSec2(opt.word_romaji)}
                       style={{
                         padding: '14px',
                         borderRadius: 'var(--radius-md)',
@@ -611,11 +610,40 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                         fontSize: '15px',
                         fontWeight: 700,
                         textAlign: 'left',
+                        cursor: sec2Feedback ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
                       }}
                     >
-                      <div>{opt.word_romaji}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 400 }}>{opt.word_kana}</div>
-                    </button>
+                      <div style={{ flex: 1 }}>
+                        <div>{opt.word_romaji}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 400 }}>{opt.word_kana}</div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playJapaneseAudio(opt.word_kana);
+                        }}
+                        title="กดฟังเสียงอ่านภาษาญี่ปุ่น"
+                        style={{
+                          padding: '6px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-subtle)',
+                          backgroundColor: '#ffffff',
+                          color: 'var(--primary-700)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginLeft: '8px',
+                        }}
+                      >
+                        <Volume2 size={16} />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -726,10 +754,9 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                       }
 
                       return (
-                        <button
+                        <div
                           key={idx}
-                          onClick={() => handleAnswerSec3(opt)}
-                          disabled={sec3Feedback !== null}
+                          onClick={() => !sec3Feedback && handleAnswerSec3(opt)}
                           style={{
                             padding: '12px 16px',
                             borderRadius: 'var(--radius-md)',
@@ -738,11 +765,40 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                             textAlign: 'left',
                             fontWeight: 600,
                             fontSize: '14px',
+                            cursor: sec3Feedback ? 'default' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
                           }}
                         >
-                          <div>{opt.romaji}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{opt.kana}</div>
-                        </button>
+                          <div style={{ flex: 1 }}>
+                            <div>{opt.romaji}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{opt.kana}</div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playJapaneseAudio(opt.kana);
+                            }}
+                            title="กดฟังเสียงอ่านประโยคภาษาญี่ปุ่น"
+                            style={{
+                              padding: '6px',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid var(--border-subtle)',
+                              backgroundColor: '#ffffff',
+                              color: 'var(--primary-700)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginLeft: '8px',
+                            }}
+                          >
+                            <Volume2 size={16} />
+                          </button>
+                        </div>
                       );
                     })}
                   </div>

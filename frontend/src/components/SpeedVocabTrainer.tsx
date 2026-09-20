@@ -271,13 +271,15 @@ export const SpeedVocabTrainer: React.FC = () => {
               }
 
               return (
-                <button
+                <div
                   key={opt.id}
-                  onClick={() => handleSelectOption(opt)}
-                  disabled={showAnswer}
-                  style={btnStyle}
+                  onClick={() => !showAnswer && handleSelectOption(opt)}
+                  style={{
+                    ...btnStyle,
+                    cursor: showAnswer ? 'default' : 'pointer',
+                  }}
                 >
-                  <div style={{ textAlign: 'left' }}>
+                  <div style={{ textAlign: 'left', flex: 1 }}>
                     <div style={{ fontSize: '16px', fontWeight: 700 }}>
                       {opt.word_romaji}
                     </div>
@@ -286,9 +288,33 @@ export const SpeedVocabTrainer: React.FC = () => {
                     </div>
                   </div>
 
-                  {showAnswer && isCorrect && <CheckCircle2 size={20} color="var(--success-600)" />}
-                  {showAnswer && isSelected && !isCorrect && <XCircle size={20} color="var(--danger-600)" />}
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playJapaneseAudio(opt.word_kana);
+                      }}
+                      title="กดฟังเสียงอ่านภาษาญี่ปุ่น"
+                      style={{
+                        padding: '6px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-subtle)',
+                        backgroundColor: '#ffffff',
+                        color: 'var(--primary-700)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Volume2 size={16} />
+                    </button>
+
+                    {showAnswer && isCorrect && <CheckCircle2 size={20} color="var(--success-600)" />}
+                    {showAnswer && isSelected && !isCorrect && <XCircle size={20} color="var(--danger-600)" />}
+                  </div>
+                </div>
               );
             })}
           </div>
