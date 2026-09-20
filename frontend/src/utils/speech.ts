@@ -1,38 +1,79 @@
-// High-Reliability Audio Player (Server-side MP3 Streamer + Web Speech API Fallback)
+// Bulletproof Dual-Engine Audio System (Direct Web Speech API + Google Cloud TTS Stream)
 
 let currentAudio: HTMLAudioElement | null = null;
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+// Pre-warm Web Speech API Voices
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  const loadVoices = () => {
+    try {
+      cachedVoices = window.speechSynthesis.getVoices();
+    } catch {
+      // ignore
+    }
+  };
+
+  loadVoices();
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+}
 
 /**
- * Play Japanese audio pronunciation
+ * Play Japanese audio pronunciation with zero-delay native TTS and Google Cloud fallback
  */
 export function playJapaneseAudio(text: string): void {
   const clean = text ? text.trim() : '';
   if (!clean) return;
 
-  try {
-    // 1. Stop any currently playing audio
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-    }
+  // 1. Try Native Web Speech Synthesis first (works offline, instant response on iOS/Android/Desktop)
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel(); // Stop previous utterance immediately
 
-    // 2. Play high quality MP3 stream from Backend API
-    const audioUrl = `/api/tts?text=${encodeURIComponent(clean)}&lang=ja`;
-    const audio = new Audio(audioUrl);
-    currentAudio = audio;
-    audio.playbackRate = 0.95;
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
 
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        console.warn('Backend TTS stream failed, attempting Web Speech fallback:', err);
-        fallbackWebSpeech(clean, 'ja-JP');
-      });
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 0.92; // Natural study pace
+      utterance.pitch = 1.0;
+
+      // Select best Japanese voice if available
+      const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
+      const jaVoice = voices.find(
+        (v) =>
+          v.lang.replace('_', '-').startsWith('ja') ||
+          v.name.includes('Japanese') ||
+          v.name.includes('Kyoko') ||
+          v.name.includes('Otoya')
+      );
+      if (jaVoice) {
+        utterance.voice = jaVoice;
+      }
+
+      let hasSpoken = false;
+      utterance.onstart = () => {
+        hasSpoken = true;
+      };
+
+      utterance.onerror = (e) => {
+        console.warn('Web Speech error, falling back to Google Cloud TTS:', e);
+        if (!hasSpoken) {
+          playGoogleCloudTTS(clean, 'ja');
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+      return;
+    } catch (err) {
+      console.warn('Web Speech exception, falling back to Google Cloud TTS:', err);
     }
-  } catch (err) {
-    console.warn('Audio player exception, attempting Web Speech fallback:', err);
-    fallbackWebSpeech(clean, 'ja-JP');
   }
+
+  // 2. Fallback: Google Cloud TTS Direct Stream
+  playGoogleCloudTTS(clean, 'ja');
 }
 
 /**
@@ -42,44 +83,74 @@ export function playThaiAudio(text: string): void {
   const clean = text ? text.trim() : '';
   if (!clean) return;
 
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.lang = 'th-TH';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+
+      const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
+      const thVoice = voices.find(
+        (v) =>
+          v.lang.replace('_', '-').startsWith('th') ||
+          v.name.includes('Thai') ||
+          v.name.includes('Kanya') ||
+          v.name.includes('Narisa')
+      );
+      if (thVoice) {
+        utterance.voice = thVoice;
+      }
+
+      let hasSpoken = false;
+      utterance.onstart = () => {
+        hasSpoken = true;
+      };
+
+      utterance.onerror = () => {
+        if (!hasSpoken) {
+          playGoogleCloudTTS(clean, 'th');
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+      return;
+    } catch (err) {
+      console.warn('Web Speech exception, falling back to Google Cloud TTS:', err);
+    }
+  }
+
+  playGoogleCloudTTS(clean, 'th');
+}
+
+/**
+ * Direct Google Cloud TTS Stream Fallback
+ */
+function playGoogleCloudTTS(text: string, lang: 'ja' | 'th'): void {
   try {
     if (currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
     }
 
-    const audioUrl = `/api/tts?text=${encodeURIComponent(clean)}&lang=th`;
-    const audio = new Audio(audioUrl);
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(
+      text
+    )}`;
+
+    const audio = new Audio(ttsUrl);
     currentAudio = audio;
-    audio.playbackRate = 1.0;
+    audio.playbackRate = lang === 'ja' ? 0.95 : 1.0;
 
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        console.warn('Backend Thai TTS stream failed, attempting Web Speech fallback:', err);
-        fallbackWebSpeech(clean, 'th-TH');
-      });
-    }
+    audio.play().catch((err) => {
+      console.warn('Google Cloud TTS fallback playback failed:', err);
+    });
   } catch (err) {
-    console.warn('Thai audio player exception, attempting Web Speech fallback:', err);
-    fallbackWebSpeech(clean, 'th-TH');
-  }
-}
-
-/**
- * Local browser fallback if server is unreachable
- */
-function fallbackWebSpeech(text: string, lang: string): void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  try {
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-    }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
-    utterance.rate = lang.startsWith('ja') ? 0.9 : 1.0;
-    window.speechSynthesis.speak(utterance);
-  } catch (err) {
-    console.error('Speech synthesis fallback failed:', err);
+    console.error('TTS playback error:', err);
   }
 }
