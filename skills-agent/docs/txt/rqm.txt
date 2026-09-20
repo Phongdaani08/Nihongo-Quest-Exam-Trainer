@@ -1,0 +1,55 @@
+# Requirements Specification: Nihongo Quest Exam Trainer
+Project: JN60101 Japanese for Communication 1 Exam Preparation System
+Target: Panyapiwat Institute of Management (PIM)
+Instructor Reference: Dr. Eknarin Jiracheewiwong
+
+---
+
+## 1. Objective & Scope
+The goal of this system is to train and guarantee that students can successfully pass the 3-minute oral and visual examination for JN60101 Chapters 1 & 2 with maximum score.
+
+---
+
+## 2. Exam Structure (Total Duration: 3 Minutes)
+
+### Part 1: Self-Introduction (Jiko Shōkai) — 5 Points
+Fixed 5-line introduction structure:
+1. "Hajimemashite"
+2. "Watashi wa [Name] desu"
+3. "Panyapiwatto keiei daigaku no gakusei desu"
+4. "Shumi wa [manga / dokusho / eiga] desu"
+5. "Dōzo yoroshiku onegai itashimasu"
+
+### Part 2: Teacher Speaks Thai -> Student Responds in Japanese — 5 Points
+Speed translation quiz covering all Chapter 1 and Chapter 2 vocabulary:
+- General vocabulary (objects, people, occupations, institutions)
+- Katakana loanwords (Nōto, Kādo, Bōru pen, Shāpu penshiru, Terebi, Rajio, Kamera, Konpyūtā, Chokorēto, Kōhī, mēru adoresu)
+- Demonstratives (kore, sore, are / kono, sono, ano)
+- Japanese numbers 1-10 (ichi, ni, san, yon/shi, go, roku, shichi/nana, hachi, kyū, jū) and telephone numbers
+
+### Part 3: Image-Based Q&A (Visual Prompt & Response)
+Exact 5 question templates asked by the teacher:
+1. Object Question:
+   - Teacher: "Kore wa nan desuka?" (What is that?)
+   - Response: "Kore wa [Object, e.g. isu / tsukue / hon / kaban] desu."
+2. Country Origin Question (Limited to 4 countries: Thailand, Japan, USA, China):
+   - Teacher: "Anohito wa doko kara kimashitaka?" (Where did that person come from?)
+   - Response: "Anohito wa [Tai / Nihon / Amerika / Chūgoku] kara kimashita."
+3. Occupation / Role Question:
+   - Teacher: "Anohito wa dare desuka?" (Who is that person?)
+   - Response: "Anohito wa [ginkōin / gakusei / sensei / isha / bengoshi / kaishain] desu."
+4. Magazine Topic Question:
+   - Teacher: "Kore wa nan no zasshi desuka?" (What kind of magazine is this?)
+   - Response: "Kore wa [nihongo / eigo / jidōsha] no zasshi desu."
+5. Location / Facility Question:
+   - Teacher: "Kochira wa nan desuka?" (What is this place?)
+   - Response: "Kochira wa [uketsuke / daigaku / byōin] desu."
+
+---
+
+## 3. Technical & Architecture Constraints
+- Separated folders: `frontend/` and `backend/`.
+- Enterprise-grade clean light/white theme UI (strictly no AI-like emojis; use clean Lucide SVG icons).
+- Relational Database: PostgreSQL with clean schema and seed data for chapters 1 and 2.
+- Containerization: Docker (standalone production build, strictly NO hot-reload).
+- Full textbook reference tags on all learning items (e.g. `[JN60101 Ch.1 p.83]`).

@@ -1,0 +1,834 @@
+import React, { useState } from 'react';
+import { Volume2, CheckCircle2, XCircle, ArrowRight, Shuffle, AlertCircle } from 'lucide-react';
+import { playJapaneseAudio } from '../utils/speech';
+
+export interface VisualQuestionItem {
+  id: string;
+  typeId: 1 | 2 | 3 | 4 | 5;
+  typeName: string;
+  teacherQuestionRomaji: string;
+  teacherQuestionKana: string;
+  teacherQuestionTh: string;
+  imageSrc: string;
+  imageTitle: string;
+  correctAnswerRomaji: string;
+  correctAnswerKana: string;
+  correctAnswerTh: string;
+  templateFormat: string;
+  textbookRef: string;
+  options: { romaji: string; kana: string; isCorrect: boolean }[];
+}
+
+export const allSection3Pool: VisualQuestionItem[] = [
+  // --- TYPE 1: OBJECTS (Kore wa nan desuka?) - All Ch. 1 & 2 Objects ---
+  {
+    id: 'vq_obj_chair',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/chair.jpg',
+    imageTitle: 'เก้าอี้ (Isu)',
+    correctAnswerRomaji: 'Kore wa isu desu.',
+    correctAnswerKana: 'これはいすです。',
+    correctAnswerTh: 'นี่คือเก้าอี้ครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.24',
+    options: [
+      { romaji: 'Kore wa isu desu.', kana: 'これはいすです。', isCorrect: true },
+      { romaji: 'Kore wa tsukue desu.', kana: 'これはつくえです。', isCorrect: false },
+      { romaji: 'Kore wa hon desu.', kana: 'これはほんです。', isCorrect: false },
+      { romaji: 'Kore wa kaban desu.', kana: 'これはかばんです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_desk',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/desk.jpg',
+    imageTitle: 'โต๊ะ (Tsukue)',
+    correctAnswerRomaji: 'Kore wa tsukue desu.',
+    correctAnswerKana: 'これはつくえです。',
+    correctAnswerTh: 'นี่คือโต๊ะครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.23',
+    options: [
+      { romaji: 'Kore wa tsukue desu.', kana: 'これはつくえです。', isCorrect: true },
+      { romaji: 'Kore wa isu desu.', kana: 'これはいすです。', isCorrect: false },
+      { romaji: 'Kore wa tokei desu.', kana: 'これはとけいです。', isCorrect: false },
+      { romaji: 'Kore wa kasa desu.', kana: 'これはかさです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_book',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/book.jpg',
+    imageTitle: 'หนังสือ (Hon)',
+    correctAnswerRomaji: 'Kore wa hon desu.',
+    correctAnswerKana: 'これはほんです。',
+    correctAnswerTh: 'นี่คือหนังสือครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.10',
+    options: [
+      { romaji: 'Kore wa hon desu.', kana: 'これはほんです。', isCorrect: true },
+      { romaji: 'Kore wa jisho desu.', kana: 'これはじしょです。', isCorrect: false },
+      { romaji: 'Kore wa shinbun desu.', kana: 'これはしんぶんです。', isCorrect: false },
+      { romaji: 'Kore wa techō desu.', kana: 'これはてちょうです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_dictionary',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/dictionary.jpg',
+    imageTitle: 'พจนานุกรม (Jisho)',
+    correctAnswerRomaji: 'Kore wa jisho desu.',
+    correctAnswerKana: 'これはじしょです。',
+    correctAnswerTh: 'นี่คือพจนานุกรมครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.11',
+    options: [
+      { romaji: 'Kore wa jisho desu.', kana: 'これはじしょです。', isCorrect: true },
+      { romaji: 'Kore wa hon desu.', kana: 'これはほんです。', isCorrect: false },
+      { romaji: 'Kore wa nōto desu.', kana: 'これはノートです。', isCorrect: false },
+      { romaji: 'Kore wa zasshi desu.', kana: 'これはざっしです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_bag',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/bag.jpg',
+    imageTitle: 'กระเป๋า (Kaban)',
+    correctAnswerRomaji: 'Kore wa kaban desu.',
+    correctAnswerKana: 'これはかばんです。',
+    correctAnswerTh: 'นี่คือกระเป๋าครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.21',
+    options: [
+      { romaji: 'Kore wa kaban desu.', kana: 'これはかばんです。', isCorrect: true },
+      { romaji: 'Kore wa kasa desu.', kana: 'これはかさです。', isCorrect: false },
+      { romaji: 'Kore wa tokei desu.', kana: 'これはとけいです。', isCorrect: false },
+      { romaji: 'Kore wa kagi desu.', kana: 'これはかぎです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_clock',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/clock.jpg',
+    imageTitle: 'นาฬิกา (Tokei)',
+    correctAnswerRomaji: 'Kore wa tokei desu.',
+    correctAnswerKana: 'これはとけいです。',
+    correctAnswerTh: 'นี่คือนาฬิกาครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.18',
+    options: [
+      { romaji: 'Kore wa tokei desu.', kana: 'これはとけいです。', isCorrect: true },
+      { romaji: 'Kore wa keitai desu.', kana: 'これはけいたいです。', isCorrect: false },
+      { romaji: 'Kore wa kagi desu.', kana: 'これはかぎです。', isCorrect: false },
+      { romaji: 'Kore wa enpitsu desu.', kana: 'これはえんぴつです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_umbrella',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/umbrella.jpg',
+    imageTitle: 'ร่ม (Kasa)',
+    correctAnswerRomaji: 'Kore wa kasa desu.',
+    correctAnswerKana: 'これはかさです。',
+    correctAnswerTh: 'นี่คือร่มครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.20',
+    options: [
+      { romaji: 'Kore wa kasa desu.', kana: 'これはかさです。', isCorrect: true },
+      { romaji: 'Kore wa kaban desu.', kana: 'これはかばんです。', isCorrect: false },
+      { romaji: 'Kore wa hon desu.', kana: 'これはほんです。', isCorrect: false },
+      { romaji: 'Kore wa isu desu.', kana: 'これはいすです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_pencil',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/pencil.jpg',
+    imageTitle: 'ดินสอ (Enpitsu)',
+    correctAnswerRomaji: 'Kore wa enpitsu desu.',
+    correctAnswerKana: 'これはえんぴつです。',
+    correctAnswerTh: 'นี่คือดินสอครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.16',
+    options: [
+      { romaji: 'Kore wa enpitsu desu.', kana: 'これはえんぴつです。', isCorrect: true },
+      { romaji: 'Kore wa bōrupen desu.', kana: 'これはボールペンです。', isCorrect: false },
+      { romaji: 'Kore wa kagi desu.', kana: 'これはかぎです。', isCorrect: false },
+      { romaji: 'Kore wa tokei desu.', kana: 'これはとけいです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_key',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/key.jpg',
+    imageTitle: 'กุญแจ (Kagi)',
+    correctAnswerRomaji: 'Kore wa kagi desu.',
+    correctAnswerKana: '这是かぎです。',
+    correctAnswerTh: 'นี่คือกุญแจครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.17',
+    options: [
+      { romaji: 'Kore wa kagi desu.', kana: 'これはかぎです。', isCorrect: true },
+      { romaji: 'Kore wa tokei desu.', kana: 'これはとけいです。', isCorrect: false },
+      { romaji: 'Kore wa keitai desu.', kana: 'これはけいたいです。', isCorrect: false },
+      { romaji: 'Kore wa kasa desu.', kana: 'これはかさです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_obj_phone',
+    typeId: 1,
+    typeName: 'แบบที่ 1: ถามสิ่งของ (Objects)',
+    teacherQuestionRomaji: 'Kore wa nan desuka?',
+    teacherQuestionKana: 'これ は なん ですか？',
+    teacherQuestionTh: 'นี่/นั่นคืออะไรครับ?',
+    imageSrc: '/assets/images/clean/phone.jpg',
+    imageTitle: 'โทรศัพท์มือถือ (Keitai)',
+    correctAnswerRomaji: 'Kore wa keitai desu.',
+    correctAnswerKana: 'これはけいたいです。',
+    correctAnswerTh: 'นี่คือโทรศัพท์มือถือครับ',
+    templateFormat: 'Kore wa [สิ่งของ] desu.',
+    textbookRef: 'JN60101 Ch.2 p.19',
+    options: [
+      { romaji: 'Kore wa keitai desu.', kana: 'これはけいたいです。', isCorrect: true },
+      { romaji: 'Kore wa terebi desu.', kana: 'これはテレビです。', isCorrect: false },
+      { romaji: 'Kore wa kamera desu.', kana: 'これはカメラです。', isCorrect: false },
+      { romaji: 'Kore wa tokei desu.', kana: 'これはとけいです。', isCorrect: false },
+    ],
+  },
+
+  // --- TYPE 2: COUNTRIES (Anohito wa doko kara kimashitaka?) - 4 Countries strictly ---
+  {
+    id: 'vq_country_japan',
+    typeId: 2,
+    typeName: 'แบบที่ 2: ถามประเทศ (4 ประเทศ)',
+    teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
+    teacherQuestionKana: 'あのひと は どこ から きましたか？',
+    teacherQuestionTh: 'คนนั้นมาจากประเทศอะไรครับ?',
+    imageSrc: '/assets/images/clean/flag_japan.png',
+    imageTitle: 'ธงชาติญี่ปุ่น (Nihon)',
+    correctAnswerRomaji: 'Anohito wa Nihon kara kimashita.',
+    correctAnswerKana: 'あのひとはにほんからきました。',
+    correctAnswerTh: 'คนนั้นมาจากประเทศญี่ปุ่นครับ',
+    templateFormat: 'Anohito wa [ประเทศ] kara kimashita.',
+    textbookRef: 'JN60101 Ch.1 p.16, 86',
+    options: [
+      { romaji: 'Anohito wa Nihon kara kimashita.', kana: 'あのひとはにほんからきました。', isCorrect: true },
+      { romaji: 'Anohito wa Tai kara kimashita.', kana: 'あのひとはタイからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Amerika kara kimashita.', kana: 'あのひとはアメリカからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Chūgoku kara kimashita.', kana: 'あのひとはちゅうごくからきました。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_country_thai',
+    typeId: 2,
+    typeName: 'แบบที่ 2: ถามประเทศ (4 ประเทศ)',
+    teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
+    teacherQuestionKana: 'あのひと は どこ から きましたか？',
+    teacherQuestionTh: 'คนนั้นมาจากประเทศอะไรครับ?',
+    imageSrc: '/assets/images/clean/flag_thailand.jpg',
+    imageTitle: 'ธงชาติไทย (Tai)',
+    correctAnswerRomaji: 'Anohito wa Tai kara kimashita.',
+    correctAnswerKana: 'あのひとはタイからきました。',
+    correctAnswerTh: 'คนนั้นมาจากประเทศไทยครับ',
+    templateFormat: 'Anohito wa [ประเทศ] kara kimashita.',
+    textbookRef: 'JN60101 Ch.1 p.15, 86',
+    options: [
+      { romaji: 'Anohito wa Tai kara kimashita.', kana: 'あのひとはタイからきました。', isCorrect: true },
+      { romaji: 'Anohito wa Nihon kara kimashita.', kana: 'あのひとはにほんからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Amerika kara kimashita.', kana: 'あのひとはアメリカからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Chūgoku kara kimashita.', kana: 'あのひとはちゅうごくからきました。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_country_usa',
+    typeId: 2,
+    typeName: 'แบบที่ 2: ถามประเทศ (4 ประเทศ)',
+    teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
+    teacherQuestionKana: 'あのひと は どこ から きましたか？',
+    teacherQuestionTh: 'คนนั้นมาจากประเทศอะไรครับ?',
+    imageSrc: '/assets/images/clean/flag_usa.png',
+    imageTitle: 'ธงชาติสหรัฐอเมริกา (Amerika)',
+    correctAnswerRomaji: 'Anohito wa Amerika kara kimashita.',
+    correctAnswerKana: 'あのひとはアメリカからきました。',
+    correctAnswerTh: 'คนนั้นมาจากประเทศอเมริกาครับ',
+    templateFormat: 'Anohito wa [ประเทศ] kara kimashita.',
+    textbookRef: 'JN60101 Ch.1 p.17, 86',
+    options: [
+      { romaji: 'Anohito wa Amerika kara kimashita.', kana: 'あのひとはアメリカからきました。', isCorrect: true },
+      { romaji: 'Anohito wa Nihon kara kimashita.', kana: 'あのひとはにほんからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Tai kara kimashita.', kana: 'あのひとはタイからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Chūgoku kara kimashita.', kana: 'あのひとはちゅうごくからきました。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_country_china',
+    typeId: 2,
+    typeName: 'แบบที่ 2: ถามประเทศ (4 ประเทศ)',
+    teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
+    teacherQuestionKana: 'あのひと は どこ から きましたか？',
+    teacherQuestionTh: 'คนนั้นมาจากประเทศอะไรครับ?',
+    imageSrc: '/assets/images/clean/flag_china.png',
+    imageTitle: 'ธงชาติจีน (Chūgoku)',
+    correctAnswerRomaji: 'Anohito wa Chūgoku kara kimashita.',
+    correctAnswerKana: 'あのひとはちゅうごくからきました。',
+    correctAnswerTh: 'คนนั้นมาจากประเทศจีนครับ',
+    templateFormat: 'Anohito wa [ประเทศ] kara kimashita.',
+    textbookRef: 'JN60101 Ch.1 p.18, 86',
+    options: [
+      { romaji: 'Anohito wa Chūgoku kara kimashita.', kana: 'あのひとはちゅうごくからきました。', isCorrect: true },
+      { romaji: 'Anohito wa Nihon kara kimashita.', kana: 'あのひとはにほんからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Tai kara kimashita.', kana: 'あのひとはタイからきました。', isCorrect: false },
+      { romaji: 'Anohito wa Amerika kara kimashita.', kana: 'あのひとはアメリカからきました。', isCorrect: false },
+    ],
+  },
+
+  // --- TYPE 3: OCCUPATIONS (Anohito wa dare desuka?) ---
+  {
+    id: 'vq_occ_banker',
+    typeId: 3,
+    typeName: 'แบบที่ 3: ทายอาชีพ (Occupations)',
+    teacherQuestionRomaji: 'Anohito wa dare desuka?',
+    teacherQuestionKana: 'あのひと は だれ ですか？',
+    teacherQuestionTh: 'คนนั้นคือใคร / ทำอาชีพอะไรครับ?',
+    imageSrc: '/assets/images/clean/banker.jpg',
+    imageTitle: 'พนักงานธนาคาร (Ginkōin)',
+    correctAnswerRomaji: 'Anohito wa ginkōin desu.',
+    correctAnswerKana: 'あのひとはぎんこういんです。',
+    correctAnswerTh: 'คนนั้นคือพนักงานธนาคารครับ',
+    templateFormat: 'Anohito wa [อาชีพ] desu.',
+    textbookRef: 'JN60101 Ch.1 p.11',
+    options: [
+      { romaji: 'Anohito wa ginkōin desu.', kana: 'あのひとはぎんこういんです。', isCorrect: true },
+      { romaji: 'Anohito wa isha desu.', kana: 'あのひとはいしゃです。', isCorrect: false },
+      { romaji: 'Anohito wa bengoshi desu.', kana: 'あのひとはべんごしです。', isCorrect: false },
+      { romaji: 'Anohito wa sensei desu.', kana: 'あのひとはせんせいです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_occ_teacher',
+    typeId: 3,
+    typeName: 'แบบที่ 3: ทายอาชีพ (Occupations)',
+    teacherQuestionRomaji: 'Anohito wa dare desuka?',
+    teacherQuestionKana: 'あのひと は だれ ですか？',
+    teacherQuestionTh: 'คนนั้นคือใคร / ทำอาชีพอะไรครับ?',
+    imageSrc: '/assets/images/clean/teacher.jpg',
+    imageTitle: 'อาจารย์ / ครู (Sensei)',
+    correctAnswerRomaji: 'Anohito wa sensei desu.',
+    correctAnswerKana: 'あのひとはせんせいです。',
+    correctAnswerTh: 'คนนั้นคืออาจารย์ครับ',
+    templateFormat: 'Anohito wa [อาชีพ] desu.',
+    textbookRef: 'JN60101 Ch.1 p.8',
+    options: [
+      { romaji: 'Anohito wa sensei desu.', kana: 'あのひとはせんせいです。', isCorrect: true },
+      { romaji: 'Anohito wa gakusei desu.', kana: 'あのひとはがくせいです。', isCorrect: false },
+      { romaji: 'Anohito wa kaishain desu.', kana: 'あのひとはかいしゃいんです。', isCorrect: false },
+      { romaji: 'Anohito wa isha desu.', kana: 'あのひとはいしゃです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_occ_student',
+    typeId: 3,
+    typeName: 'แบบที่ 3: ทายอาชีพ (Occupations)',
+    teacherQuestionRomaji: 'Anohito wa dare desuka?',
+    teacherQuestionKana: 'あのひと は だれ ですか？',
+    teacherQuestionTh: 'คนนั้นคือใคร / ทำอาชีพอะไรครับ?',
+    imageSrc: '/assets/images/clean/student.png',
+    imageTitle: 'นักเรียน / นักศึกษา (Gakusei)',
+    correctAnswerRomaji: 'Anohito wa gakusei desu.',
+    correctAnswerKana: 'あのひとはがくせいです。',
+    correctAnswerTh: 'คนนั้นคือนักศึกษาครับ',
+    templateFormat: 'Anohito wa [อาชีพ] desu.',
+    textbookRef: 'JN60101 Ch.1 p.9',
+    options: [
+      { romaji: 'Anohito wa gakusei desu.', kana: 'あのひとはがくせいです。', isCorrect: true },
+      { romaji: 'Anohito wa sensei desu.', kana: 'あのひとはせんせいです。', isCorrect: false },
+      { romaji: 'Anohito wa kenkyūsha desu.', kana: 'あのひとはけんきゅうしゃです。', isCorrect: false },
+      { romaji: 'Anohito wa ginkōin desu.', kana: 'あのひとはぎんこういんです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_occ_doctor',
+    typeId: 3,
+    typeName: 'แบบที่ 3: ทายอาชีพ (Occupations)',
+    teacherQuestionRomaji: 'Anohito wa dare desuka?',
+    teacherQuestionKana: 'あのひと は だれ ですか？',
+    teacherQuestionTh: 'คนนั้นคือใคร / ทำอาชีพอะไรครับ?',
+    imageSrc: '/assets/images/clean/doctor.png',
+    imageTitle: 'แพทย์ / คุณหมอ (Isha)',
+    correctAnswerRomaji: 'Anohito wa isha desu.',
+    correctAnswerKana: 'あのひとはいしゃです。',
+    correctAnswerTh: 'คนนั้นคือคุณหมอครับ',
+    templateFormat: 'Anohito wa [อาชีพ] desu.',
+    textbookRef: 'JN60101 Ch.1 p.12',
+    options: [
+      { romaji: 'Anohito wa isha desu.', kana: 'あのひとはいしゃです。', isCorrect: true },
+      { romaji: 'Anohito wa bengoshi desu.', kana: 'あのひとはべんごしです。', isCorrect: false },
+      { romaji: 'Anohito wa kaishain desu.', kana: 'あのひとはかいしゃいんです。', isCorrect: false },
+      { romaji: 'Anohito wa ginkōin desu.', kana: 'あのひとはぎんこういんです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_occ_lawyer',
+    typeId: 3,
+    typeName: 'แบบที่ 3: ทายอาชีพ (Occupations)',
+    teacherQuestionRomaji: 'Anohito wa dare desuka?',
+    teacherQuestionKana: 'あのひと は だれ ですか？',
+    teacherQuestionTh: 'คนนั้นคือใคร / ทำอาชีพอะไรครับ?',
+    imageSrc: '/assets/images/clean/lawyer.png',
+    imageTitle: 'ทนายความ (Bengoshi)',
+    correctAnswerRomaji: 'Anohito wa bengoshi desu.',
+    correctAnswerKana: 'あのひとはべんごしです。',
+    correctAnswerTh: 'คนนั้นคือทนายความครับ',
+    templateFormat: 'Anohito wa [อาชีพ] desu.',
+    textbookRef: 'JN60101 Ch.1 p.91',
+    options: [
+      { romaji: 'Anohito wa bengoshi desu.', kana: 'あのひとはべんごしです。', isCorrect: true },
+      { romaji: 'Anohito wa isha desu.', kana: 'あのひとはいしゃです。', isCorrect: false },
+      { romaji: 'Anohito wa kenkyūsha desu.', kana: 'あのひとはけんきゅうしゃです。', isCorrect: false },
+      { romaji: 'Anohito wa sensei desu.', kana: 'あのひとはせんせいです。', isCorrect: false },
+    ],
+  },
+
+  // --- TYPE 4: MAGAZINES (Kore wa nan no zasshi desuka?) ---
+  {
+    id: 'vq_mag_japanese',
+    typeId: 4,
+    typeName: 'แบบที่ 4: ถามประเภทนิตยสาร (Magazine Topic)',
+    teacherQuestionRomaji: 'Kore wa nan no zasshi desuka?',
+    teacherQuestionKana: 'これ は なん の ざっし ですか？',
+    teacherQuestionTh: 'นี่คือนิตยสารเกี่ยวกับอะไรครับ?',
+    imageSrc: '/assets/images/clean/magazine_japanese.jpg',
+    imageTitle: 'นิตยสารภาษาญี่ปุ่น (Nihongo no zasshi)',
+    correctAnswerRomaji: 'Kore wa nihongo no zasshi desu.',
+    correctAnswerKana: 'これはにほんごのざっしです。',
+    correctAnswerTh: 'นี่คือนิตยสารภาษาญี่ปุ่นครับ',
+    templateFormat: 'Kore wa [หัวข้อ] no zasshi desu.',
+    textbookRef: 'JN60101 Ch.2 p.12, 78',
+    options: [
+      { romaji: 'Kore wa nihongo no zasshi desu.', kana: 'これはにほんごのざっしです。', isCorrect: true },
+      { romaji: 'Kore wa eigo no zasshi desu.', kana: 'これはえいごのざっしです。', isCorrect: false },
+      { romaji: 'Kore wa jidōsha no zasshi desu.', kana: 'これはじどうしゃのざっしです。', isCorrect: false },
+      { romaji: 'Kore wa manga no zasshi desu.', kana: 'これはまんがのざっしです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_mag_car',
+    typeId: 4,
+    typeName: 'แบบที่ 4: ถามประเภทนิตยสาร (Magazine Topic)',
+    teacherQuestionRomaji: 'Kore wa nan no zasshi desuka?',
+    teacherQuestionKana: 'これ は なん の ざっし ですか？',
+    teacherQuestionTh: 'นี่คือนิตยสารเกี่ยวกับอะไรครับ?',
+    imageSrc: '/assets/images/clean/magazine_car.jpg',
+    imageTitle: 'นิตยสารรถยนต์ (Jidōsha no zasshi)',
+    correctAnswerRomaji: 'Kore wa jidōsha no zasshi desu.',
+    correctAnswerKana: 'これはじどうしゃのざっしです。',
+    correctAnswerTh: 'นี่คือนิตยสารรถยนต์ครับ',
+    templateFormat: 'Kore wa [หัวข้อ] no zasshi desu.',
+    textbookRef: 'JN60101 Ch.2 p.22, 78',
+    options: [
+      { romaji: 'Kore wa jidōsha no zasshi desu.', kana: 'これはじどうしゃのざっしです。', isCorrect: true },
+      { romaji: 'Kore wa nihongo no zasshi desu.', kana: 'これはにほんごのざっしです。', isCorrect: false },
+      { romaji: 'Kore wa eigo no zasshi desu.', kana: 'これはえいごのざっしです。', isCorrect: false },
+      { romaji: 'Kore wa kamera no zasshi desu.', kana: 'これはカメラのざっしです。', isCorrect: false },
+    ],
+  },
+
+  // --- TYPE 5: LOCATIONS (Kochira wa nan desuka?) ---
+  {
+    id: 'vq_loc_reception',
+    typeId: 5,
+    typeName: 'แบบที่ 5: ถามสถานที่ / จุดบริการ (Locations)',
+    teacherQuestionRomaji: 'Kochira wa nan desuka?',
+    teacherQuestionKana: 'こちら は なん ですか？',
+    teacherQuestionTh: 'ที่นี่คืออะไรครับ?',
+    imageSrc: '/assets/images/clean/reception.jpg',
+    imageTitle: 'แผนกต้อนรับ (Uketsuke)',
+    correctAnswerRomaji: 'Kochira wa uketsuke desu.',
+    correctAnswerKana: 'こちらはうけつけです。',
+    correctAnswerTh: 'ที่นี่คือแผนกต้อนรับ / ประชาสัมพันธ์ครับ',
+    templateFormat: 'Kochira wa [สถานที่] desu.',
+    textbookRef: 'JN60101 Ch.1 p.73',
+    options: [
+      { romaji: 'Kochira wa uketsuke desu.', kana: 'こちらはうけつけです。', isCorrect: true },
+      { romaji: 'Kochira wa daigaku desu.', kana: 'こちらはだいがくです。', isCorrect: false },
+      { romaji: 'Kochira wa byōin desu.', kana: 'こちらはびょういんです。', isCorrect: false },
+      { romaji: 'Kochira wa ginkō desu.', kana: 'こちらはぎんこうです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_loc_university',
+    typeId: 5,
+    typeName: 'แบบที่ 5: ถามสถานที่ / จุดบริการ (Locations)',
+    teacherQuestionRomaji: 'Kochira wa nan desuka?',
+    teacherQuestionKana: 'こちら は なん ですか？',
+    teacherQuestionTh: 'ที่นี่คืออะไรครับ?',
+    imageSrc: '/assets/images/clean/university.jpg',
+    imageTitle: 'มหาวิทยาลัย (Daigaku)',
+    correctAnswerRomaji: 'Kochira wa daigaku desu.',
+    correctAnswerKana: 'こちらはだいがくです。',
+    correctAnswerTh: 'ที่นี่คือมหาวิทยาลัยครับ',
+    templateFormat: 'Kochira wa [สถานที่] desu.',
+    textbookRef: 'JN60101 Ch.1 p.71',
+    options: [
+      { romaji: 'Kochira wa daigaku desu.', kana: 'こちらはだいがくです。', isCorrect: true },
+      { romaji: 'Kochira wa uketsuke desu.', kana: 'こちらはうけつけです。', isCorrect: false },
+      { romaji: 'Kochira wa byōin desu.', kana: 'こちらはびょういんです。', isCorrect: false },
+      { romaji: 'Kochira wa ginkō desu.', kana: 'こちらはぎんこうです。', isCorrect: false },
+    ],
+  },
+  {
+    id: 'vq_loc_hospital',
+    typeId: 5,
+    typeName: 'แบบที่ 5: ถามสถานที่ / จุดบริการ (Locations)',
+    teacherQuestionRomaji: 'Kochira wa nan desuka?',
+    teacherQuestionKana: 'こちら は なん ですか？',
+    teacherQuestionTh: 'ที่นี่คืออะไรครับ?',
+    imageSrc: '/assets/images/clean/hospital.jpg',
+    imageTitle: 'โรงพยาบาล (Byōin)',
+    correctAnswerRomaji: 'Kochira wa byōin desu.',
+    correctAnswerKana: 'こちらはびょういんです。',
+    correctAnswerTh: 'ที่นี่คือโรงพยาบาลครับ',
+    templateFormat: 'Kochira wa [สถานที่] desu.',
+    textbookRef: 'JN60101 Ch.1 p.72',
+    options: [
+      { romaji: 'Kochira wa byōin desu.', kana: 'こちらはびょういんです。', isCorrect: true },
+      { romaji: 'Kochira wa daigaku desu.', kana: 'こちらはだいがくです。', isCorrect: false },
+      { romaji: 'Kochira wa uketsuke desu.', kana: 'こちらはうけつけです。', isCorrect: false },
+      { romaji: 'Kochira wa kaisha desu.', kana: 'こちらはかいしゃです。', isCorrect: false },
+    ],
+  },
+];
+
+export const VisualQAArena: React.FC = () => {
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<number | 0>(0); // 0 = all
+  const [pool, setPool] = useState<VisualQuestionItem[]>(allSection3Pool);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [showAnswer, setShowAnswer] = useState<boolean>(false);
+  const [stats, setStats] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
+
+  const handleFilterType = (typeId: number) => {
+    setSelectedTypeFilter(typeId);
+    const filtered = typeId === 0 ? allSection3Pool : allSection3Pool.filter(q => q.typeId === typeId);
+    setPool(filtered);
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setShowAnswer(false);
+  };
+
+  const handleShuffle = () => {
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    setPool(shuffled);
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setShowAnswer(false);
+  };
+
+  const currentQ = pool[currentIndex] || allSection3Pool[0];
+  const isSelectedCorrect = selectedOption !== null && currentQ.options[selectedOption]?.isCorrect;
+  const selectedOptionObj = selectedOption !== null ? currentQ.options[selectedOption] : null;
+
+  const handleSelectOption = (idx: number) => {
+    if (showAnswer) return;
+    setSelectedOption(idx);
+    setShowAnswer(true);
+
+    const isCorrect = currentQ.options[idx].isCorrect;
+    if (isCorrect) {
+      playJapaneseAudio(currentQ.options[idx].kana);
+      setStats(prev => ({ correct: prev.correct + 1, total: prev.total + 1 }));
+    } else {
+      setStats(prev => ({ ...prev, total: prev.total + 1 }));
+      // Play correct answer after delay
+      setTimeout(() => playJapaneseAudio(currentQ.correctAnswerKana), 300);
+    }
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((currentIndex + 1) % pool.length);
+    setSelectedOption(null);
+    setShowAnswer(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Header Banner */}
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="badge badge-primary">ส่วนที่ 3 ของการสอบ</span>
+            <span className="badge badge-ref">Pure Photos (รูปภาพเพียวๆ ไม่มีตัวหนังสือเฉลย)</span>
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Visual Q&A Arena (ถาม-ตอบตรงภาพ 5 รูปแบบ)</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '2px' }}>
+            ฝึกตอบคำถามตาม 5 แพทเทิร์นของอาจารย์ พร้อมระบบแจ้งเตือนข้อผิดพลาดและเสียงเฉลย
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ textAlign: 'right', fontSize: '13px' }}>
+            <span style={{ color: 'var(--text-muted)' }}>ความแม่นยำ: </span>
+            <strong>{stats.correct} / {stats.total}</strong>
+          </div>
+          <button onClick={handleShuffle} className="btn-secondary" style={{ padding: '8px 14px', fontSize: '13px' }}>
+            <Shuffle size={14} /> สุ่มโจทย์ใหม่
+          </button>
+        </div>
+      </div>
+
+      {/* 5-Type Filter Toolbar */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+        {[
+          { id: 0, label: 'ทั้งหมด (รวม 5 แบบ)' },
+          { id: 1, label: '1. สิ่งของ (Kore wa nan...)' },
+          { id: 2, label: '2. 4 ประเทศ (Anohito wa doko...)' },
+          { id: 3, label: '3. อาชีพ (Anohito wa dare...)' },
+          { id: 4, label: '4. นิตยสาร (Nan no zasshi...)' },
+          { id: 5, label: '5. สถานที่ (Kochira wa nan...)' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => handleFilterType(t.id)}
+            style={{
+              padding: '10px 8px',
+              borderRadius: 'var(--radius-md)',
+              border: selectedTypeFilter === t.id ? '2px solid var(--primary-600)' : '1px solid var(--border-subtle)',
+              backgroundColor: selectedTypeFilter === t.id ? 'var(--primary-50)' : 'var(--bg-surface)',
+              fontWeight: selectedTypeFilter === t.id ? 700 : 500,
+              fontSize: '12px',
+              textAlign: 'center',
+              color: selectedTypeFilter === t.id ? 'var(--primary-700)' : 'var(--text-main)',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Main Question Display Arena */}
+      <div className="card" style={{ padding: '28px', backgroundColor: '#ffffff' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="badge badge-primary">{currentQ.typeName}</span>
+            <span className="badge-ref">{currentQ.textbookRef}</span>
+            <span className="badge">ข้อที่ {currentIndex + 1} / {pool.length}</span>
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+            โครงสร้างคำตอบ: <strong style={{ color: 'var(--text-main)' }}>{currentQ.templateFormat}</strong>
+          </div>
+        </div>
+
+        {/* PROMINENT WRONG ANSWER NOTIFICATION BANNER */}
+        {showAnswer && !isSelectedCorrect && (
+          <div style={{
+            padding: '14px 18px',
+            backgroundColor: 'var(--danger-50)',
+            border: '1.5px solid var(--danger-border)',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <AlertCircle size={24} color="var(--danger-600)" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--danger-600)' }}>
+                ❌ ตอบผิด! คุณเลือก: "{selectedOptionObj?.romaji}"
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>
+                อาจารย์ถาม: <em>"{currentQ.teacherQuestionRomaji}"</em> $\rightarrow$ คำตอบที่ถูกต้องคือ: <strong style={{ color: 'var(--primary-700)' }}>{currentQ.correctAnswerRomaji}</strong> ({currentQ.correctAnswerTh})
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PROMINENT CORRECT ANSWER NOTIFICATION BANNER */}
+        {showAnswer && isSelectedCorrect && (
+          <div style={{
+            padding: '14px 18px',
+            backgroundColor: 'var(--success-50)',
+            border: '1.5px solid var(--success-border)',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <CheckCircle2 size={24} color="var(--success-600)" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--success-600)' }}>
+                ✓ ถูกต้องตามรูปแบบที่อาจารย์กำหนด!
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>
+                "{currentQ.correctAnswerRomaji}" ({currentQ.correctAnswerKana})
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '32px', alignItems: 'center' }}>
+          {/* Left: Pure Photo without Any Text/Spoilers */}
+          <div style={{
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)',
+            overflow: 'hidden',
+            backgroundColor: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '300px',
+            boxShadow: 'var(--shadow-sm)',
+            padding: '16px'
+          }}>
+            <img
+              src={currentQ.imageSrc}
+              alt="Question item"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '270px',
+                objectFit: 'contain',
+                borderRadius: 'var(--radius-md)'
+              }}
+            />
+          </div>
+
+          {/* Right: Teacher Spoken Question & Multiple Choice Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Teacher Audio Question Box */}
+            <div style={{
+              padding: '16px 20px',
+              backgroundColor: 'var(--bg-subtle)',
+              borderRadius: 'var(--radius-md)',
+              borderLeft: '4px solid var(--primary-600)'
+            }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '2px' }}>
+                อาจารย์ชี้รูปภาพแล้วถามว่า:
+              </div>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-main)' }}>
+                "{currentQ.teacherQuestionRomaji}"
+              </div>
+              <div style={{ fontSize: '14px', color: 'var(--primary-700)', marginTop: '2px' }}>
+                {currentQ.teacherQuestionKana}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                ความหมาย: {currentQ.teacherQuestionTh}
+              </div>
+              <button
+                onClick={() => playJapaneseAudio(currentQ.teacherQuestionKana)}
+                className="btn-outline"
+                style={{ marginTop: '8px', padding: '6px 12px', fontSize: '12px' }}
+              >
+                <Volume2 size={14} /> ฟังเสียงคำถาม
+              </button>
+            </div>
+
+            {/* Multiple Choice Answers */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                เลือกประโยคคำตอบที่ถูกต้อง:
+              </div>
+              {currentQ.options.map((opt, optIdx) => {
+                const isSelected = selectedOption === optIdx;
+                let optStyle: React.CSSProperties = {
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-strong)',
+                  backgroundColor: 'var(--bg-surface)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  textAlign: 'left',
+                  transition: 'all 0.15s ease'
+                };
+
+                if (showAnswer) {
+                  if (opt.isCorrect) {
+                    optStyle.backgroundColor = 'var(--success-50)';
+                    optStyle.borderColor = 'var(--success-border)';
+                    optStyle.color = 'var(--success-600)';
+                  } else if (isSelected) {
+                    optStyle.backgroundColor = 'var(--danger-50)';
+                    optStyle.borderColor = 'var(--danger-border)';
+                    optStyle.color = 'var(--danger-600)';
+                  }
+                }
+
+                return (
+                  <button
+                    key={optIdx}
+                    onClick={() => handleSelectOption(optIdx)}
+                    disabled={showAnswer}
+                    style={optStyle}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '15px' }}>{opt.romaji}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{opt.kana}</div>
+                    </div>
+                    {showAnswer && opt.isCorrect && <CheckCircle2 size={18} color="var(--success-600)" />}
+                    {showAnswer && isSelected && !opt.isCorrect && <XCircle size={18} color="var(--danger-600)" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Answer Control Action Bar */}
+            {showAnswer && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                <button
+                  onClick={() => playJapaneseAudio(currentQ.correctAnswerKana)}
+                  className="btn-outline"
+                  style={{ padding: '8px 16px', fontSize: '13px' }}
+                >
+                  <Volume2 size={15} /> ฟังเสียงคำตอบที่ถูก
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="btn-primary"
+                  style={{ padding: '8px 20px', fontSize: '13px' }}
+                >
+                  ข้อถัดไป <ArrowRight size={15} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

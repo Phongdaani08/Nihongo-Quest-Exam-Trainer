@@ -1,0 +1,296 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
+import { CheckCircle2, Copy, KeyRound, Loader2, RefreshCw, Save, Send, ShieldAlert } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+
+type View = 'mfa' | 'smtp' | 'templates' | 'recovery'
+interface EmailSettings {
+  enabled: boolean; smtp_host: string | null; smtp_port: number; transport_security: 'tls' | 'starttls'
+  auth_method: 'none' | 'username_password'; smtp_username: string | null; password_configured: boolean
+  from_email: string | null; from_name: string; reply_to: string | null; connect_timeout_seconds: number
+  status: string; last_tested_at: string | null; last_test_succeeded: boolean | null; last_test_error: string | null
+  settings_version: number; environment_fallback: boolean
+}
+interface AuthPolicy {
+  mode: 'disabled' | 'audit' | 'optional' | 'required'; force_platform_admins: boolean; otp_digits: number
+  otp_ttl_seconds: number; challenge_ttl_seconds: number; max_attempts: number; resend_cooldown_seconds: number
+  max_sends_per_hour: number; remember_device_days: number; emergency_override_active: boolean
+}
+interface EmailTemplate {
+  template_key: string; locale: 'en' | 'th'; subject_template: string; html_template: string
+  text_template: string; version: number; active: boolean; updated_at: string
+}
+interface Metrics {
+  pending_challenges: number; locked_challenges_24h: number; successful_verifications_24h: number
+  failed_email_jobs: number; pending_email_jobs: number; smtp_status: string
+}
+
+const TEMPLATE_CATALOG = [
+  { key: 'auth.mfa_code', label: 'Sign-in verification code', description: 'One-time code used for email MFA.', variables: ['platform_name','recipient_name','code','expires_minutes','request_time','location_hint','support_url'] },
+  { key: 'auth.password_reset', label: 'Password reset request', description: 'Reset link sent from Forgot password and administrator reset actions.', variables: ['platform_name','recipient_name','reset_url','expiry_minutes','timestamp'] },
+  { key: 'auth.password_changed', label: 'Password changed alert', description: 'Security alert with an emergency session-revocation link.', variables: ['platform_name','recipient_name','changed_by','emergency_revoke_url','timestamp'] },
+  { key: 'user.account_created', label: 'New account welcome', description: 'Initial sign-in details and temporary password for a newly created user.', variables: ['platform_name','recipient_name','admin_name','temp_password','login_url','expiry_hours','timestamp'] },
+  { key: 'notification.generic', label: 'General notification', description: 'Dashboard shares, role changes, budgets, data sources and other notifications.', variables: ['platform_name','recipient_name','category_label','notification_title','notification_body','action_url','action_label','timestamp'] },
+  { key: 'support.issue_submitted', label: 'Support issue', description: 'Support ticket delivered to the configured support mailbox.', variables: ['platform_name','ticket_reference','issue_type','tenant_name','tenant_id','reporter_name','reporter_email','description','diagnostics','timestamp'] },
+  { key: 'system.smtp_test', label: 'SMTP test', description: 'Message sent when an administrator tests SMTP configuration.', variables: ['platform_name','tested_at','timestamp'] },
+] as const
+
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`/api${path}`, {
+    ...init,
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+  })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.message ?? body.error ?? `Request failed (${response.status})`)
+  return body as T
+}
+
+export function PlatformSecurityPage() {
+  const [view, setView] = useState<View>('mfa')
+  const [email, setEmail] = useState<EmailSettings | null>(null)
+  const [smtpPassword, setSmtpPassword] = useState('')
+  const [smtpTestRecipient, setSmtpTestRecipient] = useState('')
+  const [templateTestRecipient, setTemplateTestRecipient] = useState('')
+  const [policy, setPolicy] = useState<AuthPolicy | null>(null)
+  const [templates, setTemplates] = useState<EmailTemplate[]>([])
+  const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string>('auth.mfa_code')
+  const [selectedLocale, setSelectedLocale] = useState<'en' | 'th'>('en')
+  const [preview, setPreview] = useState<{ subject: string; html_body: string; text_body: string } | null>(null)
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop')
+  const [versions, setVersions] = useState<Array<{ version: number; created_at: string }>>([])
+  const [rollbackVersion, setRollbackVersion] = useState('')
+  const [codes, setCodes] = useState<string[]>([])
+  const [busy, setBusy] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const quotaLimited = Boolean(
+    email?.status === 'quota'
+    || (error && /outgoing-message quota|allowed outgoing messages|sending quota/i.test(error)),
+  )
+
+  const load = useCallback(async () => {
+    setBusy('load'); setError('')
+    try {
+      const [nextEmail, nextPolicy, nextTemplates, nextMetrics] = await Promise.all([
+        api<EmailSettings>('/platform/security/email-settings'),
+        api<AuthPolicy>('/platform/security/auth-policy'),
+        api<EmailTemplate[]>('/platform/security/email-templates'),
+        api<Metrics>('/platform/security/metrics'),
+      ])
+      setEmail(nextEmail); setPolicy(nextPolicy); setTemplates(nextTemplates); setMetrics(nextMetrics)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to load security settings') }
+    finally { setBusy('') }
+  }, [])
+  useEffect(() => { void load() }, [load])
+
+  const selectedTemplate = useMemo(
+    () => templates.find((item) => item.template_key === selectedKey && item.locale === selectedLocale) ?? null,
+    [selectedKey, selectedLocale, templates],
+  )
+  const selectedTemplateMeta = TEMPLATE_CATALOG.find((item) => item.key === selectedKey) ?? TEMPLATE_CATALOG[0]
+  const updateTemplate = (patch: Partial<EmailTemplate>) => {
+    setTemplates((items) => items.map((item) => item === selectedTemplate ? { ...item, ...patch } : item))
+  }
+  const selectedTemplateKey = selectedTemplate?.template_key
+  const selectedTemplateLocale = selectedTemplate?.locale
+  const selectedTemplateVersion = selectedTemplate?.version
+
+  const formattedPreviewHtml = useMemo(() => {
+    if (!preview?.html_body) return ''
+    const responsiveStyle = `
+      <style>
+        html, body { margin: 0; padding: 0; }
+        @media screen and (max-width: 600px) {
+          table { width: 100% !important; max-width: 100% !important; }
+          td { padding-left: 14px !important; padding-right: 14px !important; }
+        }
+        table { max-width: 100% !important; }
+        img { max-width: 100% !important; height: auto !important; }
+      </style>
+    `
+    if (preview.html_body.includes('</head>')) {
+      return preview.html_body.replace('</head>', `${responsiveStyle}</head>`)
+    }
+    return `${responsiveStyle}${preview.html_body}`
+  }, [preview?.html_body])
+
+  useEffect(() => {
+    if (!selectedTemplateKey || !selectedTemplateLocale) return
+    void api<Array<{ version: number; created_at: string }>>(`/platform/security/email-templates/${selectedTemplateKey}/${selectedTemplateLocale}/versions`)
+      .then((items) => { setVersions(items); setRollbackVersion(items[1]?.version?.toString() ?? '') })
+      .catch(() => setVersions([]))
+  }, [selectedTemplateKey, selectedTemplateLocale, selectedTemplateVersion])
+
+  const saveSmtp = async () => {
+    if (!email) return
+    setBusy('smtp-save'); setError(''); setMessage('')
+    try {
+      const saved = await api<EmailSettings>('/platform/security/email-settings', {
+        method: 'PUT',
+        body: JSON.stringify({ ...email, smtp_password: smtpPassword || null }),
+      })
+      setEmail(saved); setSmtpPassword(''); setMessage('SMTP settings saved. Run a test before enforcing MFA.')
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to save SMTP settings') }
+    finally { setBusy('') }
+  }
+  const testSmtp = async () => {
+    setBusy('smtp-test'); setError(''); setMessage('')
+    try {
+      const result = await api<{ sent_to: string }>('/platform/security/email-settings/test', {
+        method: 'POST', body: JSON.stringify({ recipient: smtpTestRecipient.trim() || null }),
+      })
+      setMessage(`Test email sent to ${result.sent_to}`); await load()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'SMTP test failed')
+      try { setEmail(await api<EmailSettings>('/platform/security/email-settings')) } catch { /* keep the send error */ }
+    }
+    finally { setBusy('') }
+  }
+  const savePolicy = async () => {
+    if (!policy) return
+    setBusy('policy'); setError(''); setMessage('')
+    try {
+      const saved = await api<AuthPolicy>('/platform/security/auth-policy', { method: 'PUT', body: JSON.stringify(policy) })
+      setPolicy(saved); setMessage('Platform MFA policy saved')
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to save MFA policy') }
+    finally { setBusy('') }
+  }
+  const saveTemplate = async () => {
+    if (!selectedTemplate) return
+    setBusy('template'); setError(''); setMessage('')
+    try {
+      const saved = await api<EmailTemplate>(`/platform/security/email-templates/${selectedTemplate.template_key}/${selectedTemplate.locale}`, {
+        method: 'PUT', body: JSON.stringify(selectedTemplate),
+      })
+      setTemplates((items) => items.map((item) => item.template_key === saved.template_key && item.locale === saved.locale ? saved : item))
+      setMessage(`Template ${saved.locale.toUpperCase()} saved as version ${saved.version}`)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to save template') }
+    finally { setBusy('') }
+  }
+  const previewTemplate = async () => {
+    if (!selectedTemplate) return
+    setBusy('preview'); setError('')
+    try {
+      setPreview(await api('/platform/security/email-templates/preview', { method: 'POST', body: JSON.stringify(selectedTemplate) }))
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to preview template') }
+    finally { setBusy('') }
+  }
+  const testTemplate = async () => {
+    if (!selectedTemplate) return
+    setBusy('template-test'); setError(''); setMessage('')
+    try {
+      const result = await api<{ sent_to: string }>('/platform/security/email-templates/test', {
+        method: 'POST',
+        body: JSON.stringify({ ...selectedTemplate, recipient: templateTestRecipient.trim() || null }),
+      })
+      setMessage(`Template test sent to ${result.sent_to}`)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to send template test') }
+    finally { setBusy('') }
+  }
+  const rollbackTemplate = async () => {
+    if (!selectedTemplate || !rollbackVersion || !window.confirm(`Restore content from version ${rollbackVersion}? A new version will be created.`)) return
+    setBusy('rollback'); setError('')
+    try {
+      const saved = await api<EmailTemplate>(`/platform/security/email-templates/${selectedTemplate.template_key}/${selectedTemplate.locale}/rollback`, { method: 'POST', body: JSON.stringify({ version: Number(rollbackVersion) }) })
+      setTemplates((items) => items.map((item) => item.template_key === saved.template_key && item.locale === saved.locale ? saved : item)); setMessage(`Restored version ${rollbackVersion} as version ${saved.version}`)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to roll back template') }
+    finally { setBusy('') }
+  }
+  const generateCodes = async () => {
+    if (!window.confirm('Rotate all unused break-glass codes? Existing unused codes will stop working.')) return
+    setBusy('codes'); setError('')
+    try { setCodes((await api<{ codes: string[] }>('/platform/security/break-glass-codes', { method: 'POST', body: JSON.stringify({ count: 10 }) })).codes) }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to generate recovery codes') }
+    finally { setBusy('') }
+  }
+
+  if (busy === 'load' && !email) return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin" /></div>
+  return <div className="min-h-full bg-slate-50 p-7">
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Platform security</p><h1 className="mt-1 text-2xl font-bold">Email MFA & delivery</h1><p className="mt-1 text-sm text-slate-500">Authentication policy, SMTP transport, transactional templates and recovery controls.</p></div>
+      <Button variant="outline" onClick={() => void load()}><RefreshCw />Refresh</Button>
+    </div>
+    {quotaLimited && (
+      <Notice tone="error">
+        {error || 'Gmail (and similar consumer SMTP accounts) stop accepting mail after their outgoing quota. The platform has paused further sends so the quota can recover. Wait, then send one test. For MFA and notifications in production, use Amazon SES, Postmark, or SendGrid.'}
+      </Notice>
+    )}
+    {error && !quotaLimited && <Notice tone="error">{error}</Notice>}{message && <Notice tone="success">{message}</Notice>}
+    {metrics && <div className="mb-6 grid gap-3 md:grid-cols-5"><Metric label="Verified / 24h" value={metrics.successful_verifications_24h} /><Metric label="Locked / 24h" value={metrics.locked_challenges_24h} /><Metric label="Pending challenges" value={metrics.pending_challenges} /><Metric label="Email queue" value={metrics.pending_email_jobs} /><Metric label="Failed email" value={metrics.failed_email_jobs} /></div>}
+    <div className="mb-5 flex gap-1 overflow-x-auto border-b border-slate-200">{(['mfa','smtp','templates','recovery'] as View[]).map((item) => <button key={item} onClick={() => setView(item)} className={`border-b-2 px-4 py-3 text-sm font-medium capitalize ${view === item ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500'}`}>{item === 'mfa' ? 'MFA policy' : item}</button>)}</div>
+    {view === 'mfa' && policy && <Section title="Platform MFA policy" description="Use Audit before Required. Required mode is blocked until SMTP passes a test and all active users have verified email.">
+      {policy.emergency_override_active && <Notice tone="error"><ShieldAlert className="size-4" />MFA_ENFORCEMENT_OVERRIDE=disabled is active. Policy is not being enforced.</Notice>}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Select label="Enforcement mode" value={policy.mode} options={['disabled','audit','optional','required']} onChange={(value) => setPolicy({ ...policy, mode: value as AuthPolicy['mode'] })} />
+        <NumberField label="OTP digits" value={policy.otp_digits} min={6} max={8} step={2} onChange={(value) => setPolicy({ ...policy, otp_digits: value })} />
+        <NumberField label="OTP lifetime (seconds)" value={policy.otp_ttl_seconds} min={120} max={600} onChange={(value) => setPolicy({ ...policy, otp_ttl_seconds: value })} />
+        <NumberField label="Challenge lifetime (seconds)" value={policy.challenge_ttl_seconds} min={300} max={900} onChange={(value) => setPolicy({ ...policy, challenge_ttl_seconds: value })} />
+        <NumberField label="Maximum attempts" value={policy.max_attempts} min={3} max={10} onChange={(value) => setPolicy({ ...policy, max_attempts: value })} />
+        <NumberField label="Resend cooldown (seconds)" value={policy.resend_cooldown_seconds} min={30} max={300} onChange={(value) => setPolicy({ ...policy, resend_cooldown_seconds: value })} />
+        <NumberField label="Maximum sends per hour" value={policy.max_sends_per_hour} min={2} max={20} onChange={(value) => setPolicy({ ...policy, max_sends_per_hour: value })} />
+        <NumberField label="Remember device (days, 0=off)" value={policy.remember_device_days} min={0} max={30} onChange={(value) => setPolicy({ ...policy, remember_device_days: value })} />
+        <label className="flex items-center gap-2 self-end rounded-lg border bg-white px-3 py-3 text-sm"><input type="checkbox" checked={policy.force_platform_admins} onChange={(event) => setPolicy({ ...policy, force_platform_admins: event.target.checked })} />Always require MFA for Platform Admins</label>
+      </div><Button className="mt-5" onClick={() => void savePolicy()} disabled={busy === 'policy'}>{busy === 'policy' ? <Loader2 className="animate-spin" /> : <Save />}Save policy</Button>
+    </Section>}
+    {view === 'smtp' && email && <Section title="SMTP transport" description="Passwords are encrypted at rest and never returned by the API.">
+      <div className="mb-4 flex items-center gap-3"><StatusBadge status={email.status} /><span className="text-xs text-slate-500">{email.last_tested_at ? `Last tested ${new Date(email.last_tested_at).toLocaleString()}` : 'Not tested'} {email.last_test_error ? `— ${email.last_test_error}` : ''}</span></div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <label className="flex items-center gap-2 rounded-lg border bg-white px-3 py-3 text-sm"><input type="checkbox" checked={email.enabled} onChange={(event) => setEmail({ ...email, enabled: event.target.checked })} />Enable SMTP delivery</label>
+        <TextField label="SMTP host" value={email.smtp_host ?? ''} onChange={(value) => setEmail({ ...email, smtp_host: value })} />
+        <NumberField label="Port" value={email.smtp_port} min={1} max={65535} onChange={(value) => setEmail({ ...email, smtp_port: value })} />
+        <Select label="Transport security" value={email.transport_security} options={['starttls','tls']} onChange={(value) => setEmail({ ...email, transport_security: value as EmailSettings['transport_security'] })} />
+        <Select label="Authentication" value={email.auth_method} options={['username_password','none']} onChange={(value) => setEmail({ ...email, auth_method: value as EmailSettings['auth_method'] })} />
+        <TextField label="Username" value={email.smtp_username ?? ''} onChange={(value) => setEmail({ ...email, smtp_username: value })} />
+        <TextField label={email.password_configured ? 'Password (leave blank to preserve)' : 'Password'} value={smtpPassword} type="password" onChange={setSmtpPassword} />
+        <TextField label="From email" value={email.from_email ?? ''} onChange={(value) => setEmail({ ...email, from_email: value })} />
+        <TextField label="From name" value={email.from_name} onChange={(value) => setEmail({ ...email, from_name: value })} />
+        <TextField label="Reply-to (optional)" value={email.reply_to ?? ''} onChange={(value) => setEmail({ ...email, reply_to: value })} />
+        <NumberField label="Connection timeout (seconds)" value={email.connect_timeout_seconds} min={3} max={60} onChange={(value) => setEmail({ ...email, connect_timeout_seconds: value })} />
+      </div>
+      <div className="mt-5 max-w-md"><TextField label="Test recipient email (optional)" value={smtpTestRecipient} type="email" onChange={setSmtpTestRecipient} /><p className="mt-1 text-xs text-slate-500">Leave blank to send to your Platform Admin email.</p></div>
+      <div className="mt-4 flex gap-2"><Button onClick={() => void saveSmtp()} disabled={busy === 'smtp-save'}><Save />Save SMTP</Button><Button variant="outline" onClick={() => void testSmtp()} disabled={busy === 'smtp-test'}><Send />Send test</Button></div>
+      {quotaLimited && <p className="mt-3 text-sm text-amber-800">Sending another test now will be rejected until the provider quota resets. Authentication still succeeded if the badge is quota rather than degraded.</p>}
+      <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm"><p className="font-semibold">Domain deliverability checklist</p><ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600"><li>Publish SPF for the configured sending service.</li><li>Enable DKIM signing at the SMTP provider.</li><li>Publish DMARC and monitor alignment for the From domain.</li><li>Use a dedicated transactional subdomain and monitor bounces.</li></ul></div>
+    </Section>}
+    {view === 'templates' && selectedTemplate && <Section title="Email templates" description="Manage every transactional email sent by the platform. HTML with scripts, forms or active handlers is rejected.">
+      <div className="mb-5 grid gap-4 md:grid-cols-[minmax(260px,420px)_1fr]">
+        <label className="block text-sm font-medium">Email type<select value={selectedKey} onChange={(event) => { setSelectedKey(event.target.value); setPreview(null) }} className="mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm">{TEMPLATE_CATALOG.filter((entry) => templates.some((template) => template.template_key === entry.key)).map((entry) => <option key={entry.key} value={entry.key}>{entry.label}</option>)}</select></label>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3"><p className="text-sm font-semibold text-blue-900">{selectedTemplateMeta.label}</p><p className="mt-1 text-xs text-blue-700">{selectedTemplateMeta.description}</p></div>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">{(['en','th'] as const).map((locale) => <button key={locale} onClick={() => { setSelectedLocale(locale); setPreview(null) }} className={`rounded-lg px-3 py-2 text-sm ${selectedLocale === locale ? 'bg-slate-900 text-white' : 'border bg-white'}`}>{locale.toUpperCase()}</button>)}<label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" checked={selectedTemplate.active} disabled={selectedTemplate.template_key === 'auth.mfa_code'} onChange={(event) => updateTemplate({ active: event.target.checked })} />Active</label></div>
+      <TextField label="Subject" value={selectedTemplate.subject_template} onChange={(value) => updateTemplate({ subject_template: value })} />
+      <label className="mt-4 block text-sm font-medium">HTML body<textarea rows={14} value={selectedTemplate.html_template} onChange={(event) => updateTemplate({ html_template: event.target.value })} className="mt-1 w-full rounded-lg border bg-white p-3 font-mono text-xs" /></label>
+      <label className="mt-4 block text-sm font-medium">Plain-text body<textarea rows={8} value={selectedTemplate.text_template} onChange={(event) => updateTemplate({ text_template: event.target.value })} className="mt-1 w-full rounded-lg border bg-white p-3 font-mono text-xs" /></label>
+      <p className="mt-2 text-xs text-slate-500">Allowed: {selectedTemplateMeta.variables.map((variable) => `{{${variable}}}`).join(', ')}</p>
+      <div className="mt-5 max-w-md"><TextField label="Test recipient email (optional)" value={templateTestRecipient} type="email" onChange={setTemplateTestRecipient} /><p className="mt-1 text-xs text-slate-500">Leave blank to send to your Platform Admin email.</p></div>
+      <div className="mt-4 flex flex-wrap items-center gap-2"><Button onClick={() => void saveTemplate()}><Save />Save version</Button><Button variant="outline" onClick={() => void previewTemplate()}>Preview</Button><Button variant="outline" onClick={() => void testTemplate()}><Send />Send test</Button>{versions.length > 1 && <><select value={rollbackVersion} onChange={(event) => setRollbackVersion(event.target.value)} className="h-9 rounded-md border px-2 text-sm">{versions.filter((item) => item.version !== selectedTemplate.version).map((item) => <option key={item.version} value={item.version}>Version {item.version} · {new Date(item.created_at).toLocaleString()}</option>)}</select><Button variant="outline" onClick={() => void rollbackTemplate()}>Restore version</Button></>}</div>
+      {preview && <div className="mt-6 overflow-hidden rounded-xl border bg-white"><div className="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold"><span>{preview.subject}</span><span className="flex gap-1">{(['desktop','mobile'] as const).map((device) => <button key={device} onClick={() => setPreviewDevice(device)} className={`rounded px-2 py-1 text-xs capitalize ${previewDevice === device ? 'bg-slate-900 text-white' : 'border'}`}>{device}</button>)}</span></div><div className="bg-slate-100 p-3"><iframe title="Email preview" srcDoc={formattedPreviewHtml} sandbox="" className={`mx-auto h-[480px] bg-white transition-all ${previewDevice === 'mobile' ? 'w-[390px] max-w-full' : 'w-full'}`} /></div><details className="border-t p-4"><summary className="cursor-pointer text-sm font-medium">Plain-text preview</summary><pre className="mt-3 whitespace-pre-wrap text-xs">{preview.text_body}</pre></details></div>}
+    </Section>}
+    {view === 'recovery' && <Section title="Break-glass recovery" description="Codes are one-time, stored only as keyed digests and shown once. Keep them offline in an approved enterprise vault.">
+      <Button onClick={() => void generateCodes()} disabled={busy === 'codes'}><KeyRound />Rotate my recovery codes</Button>
+      {codes.length > 0 && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-5"><div className="mb-3 flex items-center justify-between"><p className="font-semibold text-amber-900">Save these codes now</p><Button size="sm" variant="outline" onClick={() => void navigator.clipboard.writeText(codes.join('\n'))}><Copy />Copy</Button></div><div className="grid gap-2 font-mono text-sm sm:grid-cols-2">{codes.map((code) => <code key={code}>{code}</code>)}</div></div>}
+    </Section>}
+  </div>
+}
+
+function Section({ title, description, children }: { title: string; description: string; children: ReactNode }) { return <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold">{title}</h2><p className="mb-5 mt-1 text-sm text-slate-500">{description}</p>{children}</section> }
+function Metric({ label, value }: { label: string; value: number }) { return <div className="rounded-xl border bg-white p-4"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-bold">{value}</p></div> }
+function Notice({ tone, children }: { tone: 'error' | 'success'; children: ReactNode }) { return <div className={`mb-4 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${tone === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{tone === 'success' && <CheckCircle2 className="size-4" />}{children}</div> }
+function StatusBadge({ status }: { status: string }) {
+  const tone = status === 'ready' || status === 'environment'
+    ? 'bg-emerald-100 text-emerald-700'
+    : status === 'degraded'
+      ? 'bg-red-100 text-red-700'
+      : status === 'quota'
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-amber-100 text-amber-700'
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase ${tone}`}>{status}</span>
+}
+function TextField({ label, value, type = 'text', onChange }: { label: string; value: string; type?: string; onChange: (value: string) => void }) { return <label className="block text-sm font-medium">{label}<input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm" /></label> }
+function NumberField({ label, value, min, max, step = 1, onChange }: { label: string; value: number; min: number; max: number; step?: number; onChange: (value: number) => void }) { return <label className="block text-sm font-medium">{label}<input type="number" value={value} min={min} max={max} step={step} onChange={(event) => onChange(Number(event.target.value))} className="mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm" /></label> }
+function Select({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) { return <label className="block text-sm font-medium">{label}<select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm">{options.map((option) => <option key={option} value={option}>{option.replaceAll('_', ' ')}</option>)}</select></label> }

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-07-07T00:00:00.000Z" agent="GitHub Copilot" etag="" version="20.8.9" type="device">
+  <diagram id="db-gpt-system-context" name="DB-GPT System Context - Level 1">
+    <mxGraphModel dx="827" dy="541" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Central system: DB-GPT -->
+        <mxCell id="sys" value="DB-GPT (System)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D6EAF8;strokeColor=#2E86C1;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="160" width="360" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- External Actor: End User (Analyst) -->
+        <mxCell id="user" value="End User\n(Analyst)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FDEBD0;strokeColor=#E67E22;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend (Next.js) -->
+        <mxCell id="frontend" value="Frontend\n(Next.js App)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F8F5;strokeColor=#16A085;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- External DBs -->
+        <mxCell id="extdb" value="External Databases\n(Postgres, MySQL, etc.)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F9EBEA;strokeColor=#C0392B;" vertex="1" parent="1">
+          <mxGeometry x="620" y="40" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Vector Store (Qdrant) -->
+        <mxCell id="vector" value="Vector Store\n(Qdrant)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EAFAF1;strokeColor=#27AE60;" vertex="1" parent="1">
+          <mxGeometry x="620" y="140" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- LLM Providers (Ollama / TEI / OpenAI-proxy) -->
+        <mxCell id="llm" value="LLM Providers\n(Ollama / TEI / OpenAI-proxy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5EEF8;strokeColor=#8E44AD;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- File Storage (S3 / Blob) -->
+        <mxCell id="filestorage" value="File Storage\n(S3 / Object Storage)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF9E7;strokeColor=#B9770E;" vertex="1" parent="1">
+          <mxGeometry x="620" y="260" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Observability (Langfuse) -->
+        <mxCell id="observ" value="Observability\n(Langfuse / Tracing / Metrics)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF5FB;strokeColor=#2874A6;" vertex="1" parent="1">
+          <mxGeometry x="300" y="340" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Auth & Secrets Manager -->
+        <mxCell id="auth" value="Auth & Secrets\n(Secret Manager / Vault)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6C3483;" vertex="1" parent="1">
+          <mxGeometry x="620" y="360" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Admin / DevOps -->
+        <mxCell id="admin" value="Admin / DevOps" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FDEDEC;strokeColor=#E74C3C;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Edges with labels -->
+        <!-- User -> Frontend -->
+        <mxCell id="e1" value="User interactions (NL / Chat)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2C3E50;endArrow=block;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="user" target="frontend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend -> DB-GPT (request) -->
+        <mxCell id="e2" value="HTTP REST / SSE: NL Query, Chat, UI actions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#117A65;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="frontend" target="sys">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB-GPT -> Frontend (response) -->
+        <mxCell id="e2b" value="Results / Chart Spec / SSE Stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#1F618D;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="sys" target="frontend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB-GPT -> External DBs -->
+        <mxCell id="e3" value="Read-only SQL execution / Schema Introspection" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#C0392B;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="sys" target="extdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB-GPT -> Vector Store (Qdrant) -->
+        <mxCell id="e4" value="Embeddings Upsert / Vector Search (RAG)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#27AE60;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="sys" target="vector">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB-GPT -> LLM Providers -->
+        <mxCell id="e5" value="Prompting: NL2SQL, RAG context, Few-shot examples" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#8E44AD;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="sys" target="llm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB-GPT -> File Storage -->
+        <mxCell id="e6" value="Document Ingestion / PDF extract & storage" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#B9770E;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="sys" target="filestorage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB-GPT -> Observability -->
+        <mxCell id="e7" value="Traces, Query Fingerprints, Metrics, Audit Logs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#2874A6;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="sys" target="observ">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB-GPT -> Auth/Secrets -->
+        <mxCell id="e8" value="Retrieve DB credentials, API keys, Secrets" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#6C3483;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="sys" target="auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Admin -> DB-GPT -->
+        <mxCell id="e9" value="Deploy / Configure / Access Logs & Metrics" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeColor=#E74C3C;fontSize=11;align=center;verticalAlign=middle;" edge="1" parent="1" source="admin" target="sys">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Styling helper: border around system context scope -->
+        <mxCell id="scope" value="" style="dashPattern=1 4;rounded=1;strokeColor=#95A5A6;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="16" y="16" width="820" height="420" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

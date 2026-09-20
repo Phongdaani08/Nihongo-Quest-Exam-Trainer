@@ -1,0 +1,962 @@
+﻿Test Case Specification: Admin & System Management (v2.0),,,,,,,,,,,,
+,<<-- สีเหลือง รอย้ายไปส่วนอื่น admin,,,<<-- สีเทา หัวข้อ เทส,,,,,,,,
+,<<-- สีเเดง รอเอาออก ,,,,,,,,,,,
+,<<-- สีม่วง รอคนในทีม รีวิว,,,,,,,,,,,
+Test Case ID,BR ID,FR ID,Feature,Test Scenario,Test Type,Pre Conditions,Test Data,Test Steps,Expected Result,Actual Result,Status,Remark
+TC-ADM-001,BR-001,FR-01,Admin Login,ตรวจสอบการเข้าสู่ระบบของ Admin ด้วย Email และ Password ที่ถูกต้อง,Functional Testing / Positive Test,"1. บัญชี Admin มีสถานะ Active ในฐานข้อมูล Application PostgreSQL
+
+2. ผู้ใช้อยู่ที่หน้าจอ Login UI ของระบบ","Email: admin@company.com
+
+Password: command-center","1. กรอก Email ของ Admin ที่ลงทะเบียนไว้ถูกต้องในระบบ
+
+2. กรอก Password ที่ถูกต้องตรงกับบัญชี Admin
+
+3. คลิกปุ่ม ""Sign In""","1. ระบบนำ Admin เข้าสู่หน้าหลัก Workspace UI
+
+2. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Admin Login สำเร็จครบถ้วน
+
+3. ระบบสร้าง Session Data ใน Redis Cache พร้อมกำหนดค่า TTL ตามนโยบายความปลอดภัย
+
+4. Admin มีสิทธิ์เข้าถึงเมนู Admin Dashboard และฟีเจอร์การจัดการระบบทั้งหมด",,,
+TC-ADM-002,BR-001,FR-01,Admin Login - Invalid Credentials,ตรวจสอบการจัดการระบบเมื่อ Admin ระบุ Password ไม่ถูกต้อง,Security Testing / Negative Test,"1. มีข้อมูลบัญชี Admin ในระบบฐานข้อมูล
+
+2. ผู้ใช้อยู่ที่หน้าจอ Login UI ของระบบ","Email: admin@company.com
+
+Password: WrongPass999!","1. กรอก Email ของ Admin ที่ลงทะเบียนไว้ถูกต้องในระบบ
+
+2. กรอก Password ที่ไม่ถูกต้อง
+
+3. คลิกปุ่ม ""Sign In""","1. หน้าจอ UI แสดงข้อความแจ้งเตือนที่เหมาะสม (Invalid username or password) โดยไม่แสดงข้อมูลเทคนิคภายในระบบ
+
+2. ระบบปฏิเสธการเข้าสู่ระบบและไม่สร้างเซสชัน
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) เป็นเหตุการณ์ Admin Login Failed",,,
+TC-ADM-003,BR-001,FR-06,Admin Account Lockout,ตรวจสอบการปฏิเสธสิทธิ์เมื่อบัญชี Admin ถูกระงับการใช้งาน (Disabled Account),Security Testing / Exception Access,"1. บัญชี Admin ถูกตั้งสถานะเป็น Disabled โดย Super Admin หรือระบบ
+
+2. ผู้ใช้อยู่ที่หน้าจอ Login UI ของระบบ","Email: disabled_admin@company.com
+
+Password: command-center","1. กรอก Email และ Password ของบัญชี Admin ที่โดนระงับการใช้งาน
+
+2. คลิกปุ่ม ""Sign In""","1. ระบบปฏิเสธการเข้าใช้งานตามข้อกำหนดการควบคุมสถานะบัญชี
+
+2. หน้าจอ UI แสดงข้อความแจ้งเตือนสิทธิ์ชัดเจน (เช่น ""Account has been disabled. Please contact super admin."") 
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) ความพยายามเข้าสู่ระบบของบัญชี Admin ที่ถูกระงับ",,,
+TC-ADM-004,BR-001,FR-01,Admin Brute Force Protection,ตรวจสอบระบบป้องกันการเดารหัสผ่านซ้ำหลายครั้งสำหรับบัญชี Admin,Vulnerability / Vulnerability Testing,ผู้ใช้อยู่ที่หน้าจอ Login UI ของระบบ,"Email: admin@company.com
+
+Password: [สุ่มยิงรหัสผ่านผิด 6 ครั้ง]",1. ส่งคำขอเรียกใช้งาน API Login ด้วยรหัสผ่านที่ผิดพลาดติดต่อกันมากกว่า 5 ครั้งภายในเวลา 1 นาที สำหรับ Email บัญชี Admin,"1. ระบบส่วนหลัง (Axum Backend & Redis Cache) ส่งคืนค่า HTTP Status 429 Too Many Requests
+
+2. ระบบบล็อกคำขอ (Block Request) จาก IP หรือ Email ดังกล่าวชั่วคราวตามนโยบาย (เช่น 15 นาที)
+
+3. หน้าจอ UI แสดงข้อความแจ้งเตือนระยะเวลาการระงับคำขอชั่วคราว
+
+4. บันทึกข้อมูลเหตุการณ์ที่มีความเสี่ยงด้านความปลอดภัยสูงลงใน Audit Log",,,
+TC-ADM-005,BR-013,FR-08,Admin Session Management,ตรวจสอบความถูกต้องในการทำลายเซสชันเมื่อ Admin แจ้งออกจากระบบ,Lifecycle Testing / Performance Boundary,ผู้ใช้งาน Admin อยู่ในสถานะเข้าสู่ระบบเรียบร้อยแล้ว และมี Session Active บนหน้าเว็บแอปพลิเคชัน,Session Cookie Identity Token,"1. ผู้ใช้งาน Admin คลิกปุ่ม ""Logout"" จากเมนูควบคุมของระบบ","1. ระบบดำเนินการลบข้อมูล Session Identity ออกจากระบบ Redis Cache โดยทันที
+
+2. ทำการล้างค่าประวัติข้อมูล Cookie/Token ที่ฝั่ง Browser Client (Next.js Application)
+
+3. ระบบนำ Admin กลับมาหน้าจอ Login UI และหาก Admin กดปุ่มย้อนกลับ (Back Button) ของ Browser ต้องไม่สามารถเข้าถึงข้อมูลภายในได้
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Admin Logout สำเร็จ",,,
+User Management,,,,,,,,,,,,
+TC-USR-001,BR-001,FR-04,Create New User,ตรวจสอบความถูกต้องในการสร้างผู้ใช้ใหม่โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า User Management UI","New User Name: Test User
+
+New User Email: testuser@company.com
+
+Role: User","1. Admin คลิกปุ่ม ""Add New User"" 
+
+2. กรอกชื่อผู้ใช้ใหม่ในช่อง Full Name
+
+3. กรอก Email ผู้ใช้ใหม่ในช่อง Email
+
+4. เลือกบทบาท (Role) ที่ต้องการกำหนด
+
+5. คลิกปุ่ม ""Send Invite""","1. ระบบสร้างบัญชีผู้ใช้ใหม่ในฐานข้อมูล Application PostgreSQL สำเร็จ
+
+2. ระบบสร้างรหัสผ่านชั่วคราว (Temporary Password) และแสดงให้ Admin
+
+3. ระบบส่งอีเมลเชิญ (Invitation Email) ไปยังผู้ใช้ใหม่
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ User Created สำเร็จ
+
+5. ผู้ใช้ใหม่ปรากฏในรายชื่อผู้ใช้ในหน้า User Management พร้อมสถานะ Pending",,,
+TC-USR-002,BR-001,FR-04,Create User - Duplicate Email,ตรวจสอบการจัดการเมื่อ Admin พยายามสร้างผู้ใช้ด้วย Email ที่มีอยู่แล้ว,Functional Testing / Negative Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า User Management UI
+
+3. มีผู้ใช้ที่ใช้ Email นี้อยู่แล้วในระบบ","New User Name: Another User
+
+New User Email: existinguser@company.com (ซ้ำ)
+
+Role: User","1. Admin คลิกปุ่ม ""Add New User"" 
+
+2. กรอกชื่อผู้ใช้ใหม่ในช่อง Full Name
+
+3. กรอก Email ที่มีอยู่แล้วในระบบ
+
+4. เลือกบทบาท (Role) ที่ต้องการกำหนด
+
+5. คลิกปุ่ม ""Send Invite""","1. ระบบตรวจพบว่า Email นี้มีอยู่ในระบบแล้ว
+
+2. หน้าจอ UI แสดงข้อความแจ้งเตือน ""Email already exists in the system""
+
+3. ระบบไม่สร้างบัญชีผู้ใช้ใหม่
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ User Creation Failed เนื่องจาก Duplicate Email",,,
+TC-USR-003,BR-001,FR-04,Edit User Role,ตรวจสอบความถูกต้องในการแก้ไขบทบาทของผู้ใช้โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า User Management UI
+
+3. มีผู้ใช้ที่ต้องการแก้ไขบทบาทอยู่ในระบบ","Target User: testuser@company.com
+
+Current Role: User
+
+New Role: Data Analyst","1. Admin ค้นหาผู้ใช้ที่ต้องการแก้ไขในรายชื่อ
+
+2. คลิกที่ Dropdown เลือกบทบาทของผู้ใช้นั้น
+
+3. เลือกบทบาทใหม่ (เช่น เปลี่ยนจาก User เป็น Data Analyst)
+
+4. ระบบบันทึกการเปลี่ยนแปลงอัตโนมัติ","1. ระบบอัปเดตบทบาทของผู้ใช้ในฐานข้อมูลสำเร็จ
+
+2. สิทธิ์การเข้าถึงของผู้ใช้ถูกปรับปรุงตามบทบาทใหม่ทันที
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Role Modified พร้อมรายละเอียดบทบาทเก่าและใหม่
+
+4. ผู้ใช้จะได้รับสิทธิ์ใหม่เมื่อล็อกอินครั้งต่อไป",,,
+TC-USR-004,BR-001,FR-06,Suspend User Account,ตรวจสอบความถูกต้องในการระงับบัญชีผู้ใช้โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า User Management UI
+
+3. มีผู้ใช้ที่มีสถานะ Active อยู่ในระบบ","Target User: problematicuser@company.com
+
+Current Status: Active","1. Admin ค้นหาผู้ใช้ที่ต้องการระงับในรายชื่อ
+
+2. คลิกที่ปุ่ม Actions (More Vertical) ของผู้ใช้นั้น
+
+3. เลือก ""Suspend User"" จากเมนู dropdown
+
+4. ยืนยันการระงับบัญชีเมื่อระบบแจ้งเตือน","1. ระบบอัปเดตสถานะผู้ใช้เป็น Suspended ในฐานข้อมูลสำเร็จ
+
+2. ผู้ใช้ไม่สามารถล็อกอินเข้าสู่ระบบได้อีก
+
+3. Session ที่กำลังใช้งานอยู่ของผู้ใช้จะถูกยกเลิกทันที
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Account Suspended สำเร็จ",,,
+TC-USR-005,BR-001,FR-06,Reactivate User Account,ตรวจสอบความถูกต้องในการเปิดใช้งานบัญชีผู้ใช้ที่ถูกระงับโดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า User Management UI
+
+3. มีผู้ใช้ที่มีสถานะ Suspended อยู่ในระบบ","Target User: problematicuser@company.com
+
+Current Status: Suspended","1. Admin ค้นหาผู้ใช้ที่ต้องการเปิดใช้งานในรายชื่อ
+
+2. คลิกที่ปุ่ม Actions (More Vertical) ของผู้ใช้นั้น
+
+3. เลือก ""Reactivate User"" จากเมนู dropdown
+
+4. ยืนยันการเปิดใช้งานบัญชีเมื่อระบบแจ้งเตือน","1. ระบบอัปเดตสถานะผู้ใช้เป็น Active ในฐานข้อมูลสำเร็จ
+
+2. ผู้ใช้สามารถล็อกอินเข้าสู่ระบบได้อีกครั้ง
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Account Reactivated สำเร็จ",,,
+TC-USR-006,BR-001,FR-04,Search and Filter Users,ตรวจสอบความถูกต้องในการค้นหาและกรองผู้ใช้ในหน้า User Management,Functional Testing / UI Testing,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า User Management UI
+
+3. มีผู้ใช้หลายคนในระบบ","Search Keyword: ""analyst""
+
+Role Filter: ""Data Analyst""
+
+Status Filter: ""Active""","1. Admin พิมพ์คำค้นหาในช่อง Search
+
+2. Admin เลือก Role Filter จาก dropdown
+
+3. Admin เลือก Status Filter จาก dropdown
+
+4. ระบบแสดงผลลัพธ์การค้นหาและกรอง","1. ระบบแสดงรายชื่อผู้ใช้ที่ตรงตามเงื่อนไขการค้นหาและกรองทั้งหมด
+
+2. ผลลัพธ์แสดงเฉพาะผู้ใช้ที่มีคำว่า ""analyst"" ในชื่อหรือ Email
+
+3. ผลลัพธ์แสดงเฉพาะผู้ใช้ที่มีบทบาทเป็น Data Analyst
+
+4. ผลลัพธ์แสดงเฉพาะผู้ใช้ที่มีสถานะ Active
+
+5. ระบบแสดงจำนวนผู้ใช้ที่พบตามเงื่อนไข",,,
+TC-USR-007,BR-013,FR-08,View User Usage Analytics,ตรวจสอบความถูกต้องในการดูสถิติการใช้งานของผู้ใช้แต่ละราย,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า User Management UI
+
+3. มีผู้ใช้ที่มีข้อมูลการใช้งานในระบบ",Target User: testuser@company.com,"1. Admin คลิกที่ปุ่ม Actions (More Vertical) ของผู้ใช้ที่ต้องการดู
+
+2. เลือก ""Usage Stats"" จากเมนู dropdown
+
+3. ระบบแสดง Drawer สถิติการใช้งานทางด้านขวา","1. ระบบแสดง Drawer สถิติการใช้งานของผู้ใช้ทางด้านขวาสำเร็จ
+
+2. แสดงข้อมูล: จำนวน Query ที่รัน, Token ที่ใช้, Latency เฉลี่ย, โมเดลที่ใช้บ่อย, ค่าใช้จ่ายรายเดือน
+
+3. แสดงกราฟแนวโน้มการใช้งานในช่วง 7 วันย้อนหลัง
+
+4. ข้อมูลที่แสดงตรงตามข้อมูลจริงในระบบ",,,
+TC-USR-008,BR-001,FR-04,Reset User Password,ตรวจสอบการรีเซ็ตรหัสผ่านผู้ใช้โดย Admin,Functional Testing / Positive Test,1. Admin ล็อกอิน 2. มีผู้ใช้ที่ต้องการรีเซ็ต,Target: testuser@company.com,"1. คลิก Actions > Reset Password
+2. ยืนยันการรีเซ็ต","1. ระบบสร้าง Temporary Password ใหม่
+2. ระบบตั้งค่า must_change_password = true
+3. ระบบทำลาย Session เดิมของผู้ใช้
+4. ระบบบันทึก Audit Log Password Reset",,,
+TC-USR-009,BR-001,FR-04,Delete User Account,ตรวจสอบการลบบัญชีผู้ใช้โดย Admin,Functional Testing / Positive Test,1. Admin ล็อกอิน 2. มีผู้ใช้ที่ต้องการลบ,Target: olduser@company.com,"1. คลิก Actions > Delete
+2. ยืนยันการลบ","1. ระบบลบ/ปิดบัญชีผู้ใช้สำเร็จ
+2. ผู้ใช้ไม่ปรากฏในรายชื่อ
+3. Session ทั้งหมดถูกทำลาย
+4. ระบบบันทึก Audit Log User Deleted",,,
+TC-USR-010,BR-001,FR-04,User Pagination,ตรวจสอบการแบ่งหน้ารายชื่อผู้ใช้,Functional Testing / UI Testing,1. มีผู้ใช้มากกว่า 20 คน,"Page: 1, Limit: 20","1. เปิดหน้า User Management
+2. เลื่อนไปหน้าถัดไป","1. ระบบแสดง 20 รายการต่อหน้า
+2. สามารถเปลี่ยนหน้าได้
+3. จำนวนทั้งหมดแสดงถูกต้อง",,,
+TC-USR-011,BR-001,FR-04,Invite User - Invalid Email,ตรวจสอบการปฏิเสธเมื่อกรอก Email ไม่ถูกต้อง,Functional Testing / Negative Test,1. Admin อยู่ที่หน้า User Management,"Email: ""invalid-email""","1. คลิก ""Add New User""
+2. กรอก Email ไม่ถูกต้อง
+3. คลิก ""Send Invite""","1. ระบบแสดง ""Invalid email format""
+2. ระบบไม่สร้างบัญชี
+3. ปุ่ม Send Invite ถูก Disable",,,
+Roles,,,,,,,,,,,,
+TC-ROLE-001,BR-001,FR-04,Create New Role,ตรวจสอบความถูกต้องในการสร้างบทบาทใหม่โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Role Configuration UI","New Role Name: Data Engineer
+
+Description: Role for data engineering tasks","1. Admin คลิกปุ่ม ""Create New Role"" 
+
+2. กรอกชื่อบทบาทใหม่ในช่อง Role Name
+
+3. กรอกรายละเอียดบทบาทในช่อง Description
+
+4. คลิกปุ่ม ""Create Role""","1. ระบบสร้างบทบาทใหม่ในฐานข้อมูลสำเร็จ
+
+2. บทบาทใหม่ปรากฏในรายชื่อบทบาททางด้านซ้าย
+
+3. บทบาทใหม่มีสิทธิ์เริ่มต้นเป็น Default Deny (สิทธิ์ที่มีความเสี่ยงสูงถูกปิดใช้งาน)
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Role Created สำเร็จ",,,
+TC-ROLE-002,BR-001,FR-04,Create Role - Duplicate Name,ตรวจสอบการจัดการเมื่อ Admin พยายามสร้างบทบาทด้วยชื่อที่มีอยู่แล้ว,Functional Testing / Negative Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Role Configuration UI
+
+3. มีบทบาทที่ชื่อเดียวกันอยู่แล้วในระบบ","New Role Name: Admin (ซ้ำ)
+
+Description: Duplicate role","1. Admin คลิกปุ่ม ""Create New Role"" 
+
+2. กรอกชื่อบทบาทที่มีอยู่แล้วในระบบ
+
+3. กรอกรายละเอียดบทบาท
+
+4. คลิกปุ่ม ""Create Role""","1. ระบบตรวจพบว่าชื่อบทบาทนี้มีอยู่ในระบบแล้ว
+
+2. หน้าจอ UI แสดงข้อความแจ้งเตือน ""Role name already exists""
+
+3. ระบบไม่สร้างบทบาทใหม่
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Role Creation Failed เนื่องจาก Duplicate Name",,,
+TC-ROLE-003,BR-001,FR-04,Edit Role Permissions,ตรวจสอบความถูกต้องในการแก้ไขสิทธิ์ของบทบาทโดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Role Configuration UI
+
+3. Admin เลือกบทบาทที่ต้องการแก้ไข","Target Role: Data Analyst
+
+Permission to Edit: Execute Queries
+
+New Value: Enable (Checked)","1. Admin คลิกที่บทบาทที่ต้องการแก้ไขในรายชื่อทางซ้าย
+
+2. คลิก checkbox ของสิทธิ์ที่ต้องการแก้ไขใน Permission Matrix
+
+3. คลิกปุ่ม ""Save Changes""","1. ระบบอัปเดตสิทธิ์ของบทบาทในฐานข้อมูลสำเร็จ
+
+2. ผู้ใช้ทั้งหมดที่มีบทบาทนี้จะได้รับสิทธิ์ใหม่ทันที
+
+3. ระบบแสดง Toast Notification ""Permissions Saved Successfully!""
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Role Permissions Modified พร้อมรายละเอียดสิทธิ์ที่เปลี่ยนแปลง",,,
+TC-ROLE-004,BR-001,FR-04,Reset Role Permissions to Default,ตรวจสอบความถูกต้องในการรีเซ็ตสิทธิ์บทบาทกลับค่าเริ่มต้น,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Role Configuration UI
+
+3. Admin ได้ทำการแก้ไขสิทธิ์บทบาทไปแล้ว",Target Role: Data Analyst,"1. Admin คลิกที่บทบาทที่ต้องการรีเซ็ต
+
+2. คลิกปุ่ม ""Reset Defaults""
+
+3. ยืนยันการรีเซ็ตเมื่อระบบแจ้งเตือน","1. ระบบรีเซ็ตสิทธิ์ของบทบาทกลับเป็นค่าเริ่มต้นสำเร็จ
+
+2. สิทธิ์ทั้งหมดกลับสู่สถานะ Default ตามค่ากำหนดในระบบ
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Role Permissions Reset สำเร็จ",,,
+TC-ROLE-005,BR-001,FR-04,View Permission Matrix,ตรวจสอบความถูกต้องในการดูตารางสิทธิ์ (Permission Matrix),Functional Testing / UI Testing,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Role Configuration UI",N/A,"1. Admin คลิกที่บทบาทใดๆ ในรายชื่อทางซ้าย
+
+2. ระบบแสดง Permission Matrix ทางด้านขวา","1. ระบบแสดงตารางสิทธิ์ (Permission Matrix) สำเร็จ
+
+2. ตารางแสดงสิทธิ์ทั้งหมดแบ่งตามหมวดหมู่ (DATA ACCESS, MANAGEMENT, AI FEATURES)
+
+3. ตารางแสดงสถานะสิทธิ์ของแต่ละบทบาท (Checked/Unchecked) อย่างถูกต้อง
+
+4. ข้อมูลที่แสดงตรงตามข้อมูลจริงในฐานข้อมูล",,,
+TC-ROLE-006,BR-013,FR-08,Permission Change Audit Log,ตรวจสอบการบันทึกประวัติเหตุการณ์เมื่อมีการเปลี่ยนแปลงสิทธิ์บทบาท,Functional Testing / Log Verification,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Role Configuration UI
+
+3. Admin ทำการเปลี่ยนแปลงสิทธิ์บทบาท","Target Role: Data Analyst
+
+Changed Permission: Execute Queries","1. Admin แก้ไขสิทธิ์บทบาทใดๆ
+
+2. คลิกปุ่ม ""Save Changes""
+
+3. ตรวจสอบตารางประวัติระบบ (Audit Log Table)","1. ระบบต้องทำการบันทึกข้อมูลการเปลี่ยนสิทธิ์ทันทีหลังกดบันทึกความต้องการบนหน้าจอ
+
+2. Log ต้องระบุข้อมูล Admin ที่เปลี่ยนสิทธิ์, บทบาทที่ถูกเปลี่ยน, สิทธิ์ที่เปลี่ยน, ค่าเก่า, ค่าใหม่, และวันเวลาที่ทำรายการครบถ้วน
+
+3. ข้อมูลประวัติต้องระบุ Correlation ID, IP Address, และ Timestamp อย่างถูกต้อง",,,
+Data Sources,,,,,,,,,,,,
+TC-DS-001,BR-001,FR-17,Add Data Source,ตรวจสอบความถูกต้องในการเพิ่มแหล่งข้อมูลใหม่โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Data Source Management UI","Data Source Type: PostgreSQL
+
+Host: db.example.com
+
+Port: 5432
+
+Database: sales_dw
+
+Username: readonly_user
+
+Password: ********","1. Admin คลิกปุ่ม ""Add Data Source"" 
+
+2. เลือกประเภทแหล่งข้อมูล (PostgreSQL, Snowflake, BigQuery)
+
+3. กรอกข้อมูลการเชื่อมต่อ (Host, Port, Database, Username, Password)
+
+4. คลิกปุ่ม ""Test Connection"" เพื่อทดสอบการเชื่อมต่อ
+
+5. คลิกปุ่ม ""Save"" เมื่อการเชื่อมต่อสำเร็จ","1. ระบบทดสอบการเชื่อมต่อกับแหล่งข้อมูลสำเร็จ
+
+2. ระบบบันทึกข้อมูลแหล่งข้อมูลใหม่ในฐานข้อมูลสำเร็จ
+
+3. ข้อมูลรหัสผ่านถูกเข้ารหัสด้วย AES-256 ก่อนบันทึก
+
+4. แหล่งข้อมูลใหม่ปรากฏในรายชื่อแหล่งข้อมูล
+
+5. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Data Source Added สำเร็จ",,,
+TC-DS-002,BR-001,FR-17,Test Data Source Connection,ตรวจสอบความถูกต้องในการทดสอบการเชื่อมต่อแหล่งข้อมูล,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Data Source Management UI
+
+3. มีแหล่งข้อมูลที่ต้องการทดสอบอยู่ในระบบ",Target Data Source: Sales DW,"1. Admin คลิกที่แหล่งข้อมูลที่ต้องการทดสอบ
+
+2. คลิกปุ่ม ""Test Connection""","1. ระบบทดสอบการเชื่อมต่อกับแหล่งข้อมูลสำเร็จ
+
+2. ระบบแสดงสถานะ ""Connection Successful"" พร้อมเวลาที่ใช้ในการเชื่อมต่อ
+
+3. ระบบแสดงข้อมูล Schema พื้นฐานของแหล่งข้อมูล (จำนวนตาราง, ฟิลด์)
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Connection Test สำเร็จ",,,
+TC-DS-003,BR-001,FR-17,Test Data Source Connection - Failed,ตรวจสอบการจัดการเมื่อการทดสอบการเชื่อมต่อแหล่งข้อมูลล้มเหลว,Functional Testing / Negative Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Data Source Management UI
+
+3. มีแหล่งข้อมูลที่ข้อมูลการเชื่อมต่อไม่ถูกต้อง","Target Data Source: Invalid DW
+
+Invalid Credentials","1. Admin คลิกที่แหล่งข้อมูลที่ต้องการทดสอบ
+
+2. คลิกปุ่ม ""Test Connection""","1. ระบบทดสอบการเชื่อมต่อกับแหล่งข้อมูลล้มเหลว
+
+2. ระบบแสดงสถานะ ""Connection Failed"" พร้อมข้อความแจ้งเตือนที่เหมาะสม
+
+3. ระบบไม่บันทึกแหล่งข้อมูลที่เชื่อมต่อไม่ได้
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Connection Test Failed",,,
+TC-DS-004,BR-001,FR-17,Edit Data Source,ตรวจสอบความถูกต้องในการแก้ไขข้อมูลแหล่งข้อมูลโดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Data Source Management UI
+
+3. มีแหล่งข้อมูลที่ต้องการแก้ไขอยู่ในระบบ","Target Data Source: Sales DW
+
+New Password: ********new","1. Admin คลิกที่แหล่งข้อมูลที่ต้องการแก้ไข
+
+2. คลิกปุ่ม ""Edit"" 
+
+3. แก้ไขข้อมูลการเชื่อมต่อ (เช่น เปลี่ยนรหัสผ่าน)
+
+4. คลิกปุ่ม ""Test Connection"" เพื่อทดสอบการเชื่อมต่อ
+
+5. คลิกปุ่ม ""Save"" เมื่อการเชื่อมต่อสำเร็จ","1. ระบบอัปเดตข้อมูลแหล่งข้อมูลในฐานข้อมูลสำเร็จ
+
+2. ข้อมูลรหัสผ่านใหม่ถูกเข้ารหัสด้วย AES-256 ก่อนบันทึก
+
+3. ระบบทดสอบการเชื่อมต่อใหม่สำเร็จ
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Data Source Modified สำเร็จ",,,
+TC-DS-005,BR-001,FR-17,Delete Data Source,ตรวจสอบความถูกต้องในการลบแหล่งข้อมูลโดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Data Source Management UI
+
+3. มีแหล่งข้อมูลที่ต้องการลบอยู่ในระบบ",Target Data Source: Old DW,"1. Admin คลิกที่แหล่งข้อมูลที่ต้องการลบ
+
+2. คลิกปุ่ม ""Delete"" 
+
+3. ยืนยันการลบเมื่อระบบแจ้งเตือน","1. ระบบลบแหล่งข้อมูลออกจากฐานข้อมูลสำเร็จ
+
+2. แหล่งข้อมูลไม่ปรากฏในรายชื่อแหล่งข้อมูลแล้ว
+
+3. Query ที่เชื่อมโยงกับแหล่งข้อมูลนี้จะไม่สามารถรันได้
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Data Source Deleted สำเร็จ",,,
+TC-DS-006,BR-001,FR-17,View Data Source Schema,ตรวจสอบความถูกต้องในการดู Schema ของแหล่งข้อมูล,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Data Source Management UI
+
+3. มีแหล่งข้อมูลที่เชื่อมต่อได้อยู่ในระบบ",Target Data Source: Sales DW,"1. Admin คลิกที่แหล่งข้อมูลที่ต้องการดู Schema
+
+2. คลิกปุ่ม ""View Schema""","1. ระบบแสดง Schema ของแหล่งข้อมูลสำเร็จ
+
+2. แสดงรายชื่อตารางทั้งหมดในแหล่งข้อมูล
+
+3. แสดงโครงสร้างฟิลด์ (Columns) และประเภทข้อมูล (Data Types) ของแต่ละตาราง
+
+4. ข้อมูล Schema ที่แสดงตรงตามข้อมูลจริงในแหล่งข้อมูล",,,
+TC-DS-007,BR-001,FR-17,Add Data Source - Duplicate Name,ตรวจสอบการปฏิเสธเมื่อเพิ่ม Data Source ชื่อซ้ำ,Functional Testing / Negative Test,1. มี Data Source ชื่อนี้อยู่แล้ว,"Name: ""Sales DW"" (ซ้ำ)","1. คลิก ""Add Data Source""
+2. กรอกชื่อที่ซ้ำ
+3. คลิก ""Save""","1. ระบบแสดง ""Data source name already exists""
+2. ระบบไม่สร้าง Data Source ใหม่",,,
+TC-DS-008,BR-001,FR-17,Toggle Data Source Status,ตรวจสอบการเปิด/ปิดสถานะ Data Source,Functional Testing / Positive Test,1. มี Data Source ในระบบ,"Target: Sales DW
+Action: Disable","1. คลิก Toggle บน Data Source
+2. ยืนยันการเปลี่ยนสถานะ","1. ระบบเปลี่ยนสถานะสำเร็จ
+2. Data Source ที่ Disabled ไม่สามารถใช้ Query ได้
+3. ระบบบันทึก Audit Log",,,
+TC-DS-009,BR-001,FR-17,View Data Source List,ตรวจสอบการแสดงรายการ Data Source ทั้งหมด,Functional Testing / Positive Test,1. Admin ล็อกอิน 2. มี Data Source ในระบบ,N/A,1. ไปที่หน้า Data Source Management,"1. ระบบแสดงรายการ Data Source
+2. แสดง: ชื่อ, ประเภท, สถานะ, เวลาเชื่อมต่อล่าสุด
+3. สามารถค้นหา/กรองได้",,,
+AI Models,,,,,,,,,,,,
+TC-LLM-001,BR-001,FR-17,Register LLM Model,ตรวจสอบความถูกต้องในการลงทะเบียนโมเดล LLM ใหม่โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Model Management UI","Model Provider: OpenAI
+
+Model Name: GPT-4o
+
+API Key: sk-********************
+
+Default Model: Yes","1. Admin คลิกปุ่ม ""Add Model"" 
+
+2. เลือก Provider (OpenAI, Anthropic, Local/Ollama)
+
+3. กรอกชื่อโมเดล
+
+4. กรอก API Key (สำหรับ External Provider)
+
+5. เลือกเป็น Default Model หรือไม่
+
+6. คลิกปุ่ม ""Test Model"" เพื่อทดสอบ
+
+7. คลิกปุ่ม ""Save"" เมื่อทดสอบสำเร็จ","1. ระบบทดสอบการเชื่อมต่อกับ LLM Provider สำเร็จ
+
+2. ระบบบันทึกข้อมูลโมเดลใหม่ในฐานข้อมูลสำเร็จ
+
+3. API Key ถูกเข้ารหัสด้วย AES-256 ก่อนบันทึก
+
+4. โมเดลใหม่ปรากฏในรายชื่อโมเดลที่เปิดใช้งาน
+
+5. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ LLM Model Registered สำเร็จ",,,
+TC-LLM-002,BR-001,FR-17,Enable/Disable LLM Model,ตรวจสอบความถูกต้องในการเปิด/ปิดใช้งานโมเดล LLM โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Model Management UI
+
+3. มีโมเดลที่ลงทะเบียนไว้อยู่ในระบบ","Target Model: Claude-3.5-Sonnet
+
+Action: Disable","1. Admin คลิกที่โมเดลที่ต้องการเปิด/ปิดใช้งาน
+
+2. คลิก Toggle Switch เพื่อเปิด/ปิดใช้งาน
+
+3. ยืนยันการเปลี่ยนแปลงเมื่อระบบแจ้งเตือน","1. ระบบอัปเดตสถานะโมเดลในฐานข้อมูลสำเร็จ
+
+2. โมเดลที่ปิดใช้งานจะไม่ปรากฏใน Dropdown ของผู้ใช้
+
+3. โมเดลที่เปิดใช้งานจะปรากฏใน Dropdown ของผู้ใช้ที่มีสิทธิ์
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ LLM Model Status Changed สำเร็จ",,,
+TC-LLM-003,BR-001,FR-17,Set Default LLM Model,ตรวจสอบความถูกต้องในการตั้งค่าโมเดลเริ่มต้นโดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Model Management UI
+
+3. มีโมเดลหลายตัวที่เปิดใช้งานอยู่ในระบบ","Target Model: GPT-4o
+
+Action: Set as Default","1. Admin คลิกที่โมเดลที่ต้องการตั้งเป็นค่าเริ่มต้น
+
+2. คลิกปุ่ม ""Set as Default"" 
+
+3. ยืนยันการเปลี่ยนแปลงเมื่อระบบแจ้งเตือน","1. ระบบอัปเดตโมเดลเริ่มต้นในฐานข้อมูลสำเร็จ
+
+2. โมเดลที่ตั้งเป็นค่าเริ่มต้นจะถูกเลือกอัตโนมัติเมื่อผู้ใช้เปิดหน้าแชทใหม่
+
+3. โมเดลเริ่มต้นเดิมจะถูกยกเลิกสถานะ Default
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Default Model Changed สำเร็จ",,,
+TC-LLM-004,BR-001,FR-17,Test LLM Model Connection,ตรวจสอบความถูกต้องในการทดสอบการเชื่อมต่อ LLM Model,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Model Management UI
+
+3. มีโมเดลที่ลงทะเบียนไว้อยู่ในระบบ",Target Model: GPT-4o,"1. Admin คลิกที่โมเดลที่ต้องการทดสอบ
+
+2. คลิกปุ่ม ""Test Model""","1. ระบบทดสอบการเชื่อมต่อกับ LLM Provider สำเร็จ
+
+2. ระบบแสดงสถานะ ""Model Connection Successful"" พร้อมเวลาที่ใช้ในการเชื่อมต่อ
+
+3. ระบบแสดงข้อมูลพื้นฐานของโมเดล (Version, Context Window, Pricing)
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Model Connection Test สำเร็จ",,,
+TC-LLM-005,BR-001,FR-17,Delete LLM Model,ตรวจสอบความถูกต้องในการลบโมเดล LLM โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Model Management UI
+
+3. มีโมเดลที่ต้องการลบอยู่ในระบบ",Target Model: Old Model,"1. Admin คลิกที่โมเดลที่ต้องการลบ
+
+2. คลิกปุ่ม ""Delete"" 
+
+3. ยืนยันการลบเมื่อระบบแจ้งเตือน","1. ระบบลบโมเดลออกจากฐานข้อมูลสำเร็จ
+
+2. โมเดลไม่ปรากฏในรายชื่อโมเดลแล้ว
+
+3. API Key ของโมเดลถูกลบออกจาก Secret Management
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ LLM Model Deleted สำเร็จ",,,
+TC-LLM-006,BR-001,FR-17,Configure Model Permissions,ตรวจสอบความถูกต้องในการกำหนดสิทธิ์การเข้าถึงโมเดลตามบทบาท,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Model Management UI
+
+3. มีโมเดลที่ลงทะเบียนไว้อยู่ในระบบ","Target Model: GPT-4o
+
+Allowed Roles: Admin, Data Analyst
+
+Restricted Roles: User, Viewer","1. Admin คลิกที่โมเดลที่ต้องการกำหนดสิทธิ์
+
+2. คลิกปุ่ม ""Configure Permissions"" 
+
+3. เลือกบทบาทที่อนุญาตให้ใช้โมเดลนี้
+
+4. คลิกปุ่ม ""Save""","1. ระบบอัปเดตสิทธิ์การเข้าถึงโมเดลในฐานข้อมูลสำเร็จ
+
+2. บทบาทที่เลือกจะเห็นโมเดลนี้ใน Dropdown
+
+3. บทบาทที่ไม่ได้เลือกจะไม่เห็นโมเดลนี้ใน Dropdown
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Model Permissions Configured สำเร็จ",,,
+TC-LLM-007,BR-001,FR-17,Register Model - Invalid API Key,ตรวจสอบการปฏิเสธเมื่อ API Key ไม่ถูกต้อง,Functional Testing / Negative Test,1. Admin อยู่ที่หน้า Model Management,"Provider: OpenAI
+API Key: sk-invalid-key","1. คลิก ""Add Model""
+2. กรอก API Key ที่ไม่ถูกต้อง
+3. คลิก ""Test Model""","1. ระบบแสดง ""Model connection failed: Invalid API Key""
+2. ระบบไม่บันทึกโมเดล
+3. ระบบบันทึก Audit Log Connection Failed",,,
+TC-LLM-008,BR-001,FR-17,Toggle Model Status,ตรวจสอบการเปิด/ปิดสถานะโมเดล,Functional Testing / Positive Test,1. มีโมเดลในระบบ,"Target: GPT-4o
+Action: Disable","1. คลิก Toggle บนโมเดล
+2. ยืนยันการเปลี่ยนสถานะ","1. ระบบเปลี่ยนสถานะสำเร็จ
+2. โมเดลที่ Disabled ไม่ปรากฏใน Dropdown ของผู้ใช้
+3. ระบบบันทึก Audit Log",,,
+TC-LLM-009,BR-001,FR-17,Delete Default Model - Prevent,ตรวจสอบการปฏิเสธเมื่อลบโมเดลที่เป็น Default,Security Testing / Negative Test,1. มีโมเดลที่เป็น Default,Target: GPT-4o (Default),"1. คลิก Delete บนโมเดล Default
+2. ยืนยันการลบ","1. ระบบแสดง ""Cannot delete default model. Set another model as default first.""
+2. ระบบไม่ลบโมเดล",,,
+Audit Logs,,,,,,,,,,,,
+TC-AUD-001,BR-013,FR-08,View Audit Log Dashboard,ตรวจสอบความถูกต้องในการดู Audit Log Dashboard,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Audit Log UI",N/A,"1. Admin นำทางไปยังหน้า Audit Log Dashboard
+
+2. ระบบแสดง Audit Log Dashboard","1. ระบบแสดง Audit Log Dashboard สำเร็จ
+
+2. แสดงรายการประวัติเหตุการณ์ทั้งหมดในระบบ
+
+3. แสดงข้อมูล: Timestamp, Event Type, User, Resource, Status, IP Address
+
+4. ข้อมูลที่แสดงตรงตามข้อมูลจริงใน Audit Log Table",,,
+TC-AUD-002,BR-013,FR-08,Filter Audit Logs,ตรวจสอบความถูกต้องในการกรอง Audit Log ตามเงื่อนไข,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Audit Log UI","Event Type: USER_LOGIN
+
+Date Range: Last 7 days
+
+Status: SUCCESS","1. Admin เลือก Event Type จาก Dropdown
+
+2. Admin เลือก Date Range จาก Date Picker
+
+3. Admin เลือก Status จาก Dropdown
+
+4. คลิกปุ่ม ""Apply Filters""","1. ระบบแสดง Audit Log ที่ตรงตามเงื่อนไขการกรองทั้งหมด
+
+2. ผลลัพธ์แสดงเฉพาะเหตุการณ์ USER_LOGIN ในช่วง 7 วันย้อนหลัง
+
+3. ผลลัพธ์แสดงเฉพาะเหตุการณ์ที่มีสถานะ SUCCESS
+
+4. ระบบแสดงจำนวนเหตุการณ์ที่พบตามเงื่อนไข",,,
+TC-AUD-003,BR-013,FR-08,Export Audit Logs,ตรวจสอบความถูกต้องในการส่งออก Audit Log,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Audit Log UI
+
+3. มี Audit Log ที่ต้องการส่งออกอยู่ในระบบ","Export Format: CSV
+
+Date Range: Last 30 days","1. Admin กรอง Audit Log ตามที่ต้องการ
+
+4. คลิกปุ่ม ""Export"" 
+
+5. เลือก Format ที่ต้องการส่งออก (CSV, JSON)","1. ระบบสร้างไฟล์ Export สำเร็จ
+
+2. ไฟล์ถูกดาวน์โหลดไปยังเครื่องของ Admin
+
+3. ไฟล์มีข้อมูล Audit Log ที่ตรงตามที่กรอง
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Audit Log Exported สำเร็จ",,,
+TC-AUD-004,BR-013,FR-08,View Audit Log Details,ตรวจสอบความถูกต้องในการดูรายละเอียด Audit Log แต่ละรายการ,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Audit Log UI
+
+3. มี Audit Log ที่ต้องการดูรายละเอียดอยู่ในระบบ",Target Audit Log ID: LOG-12345,"1. Admin คลิกที่ Audit Log ที่ต้องการดูรายละเอียด
+
+2. ระบบแสดง Modal/Drawer รายละเอียด","1. ระบบแสดงรายละเอียด Audit Log สำเร็จ
+
+2. แสดงข้อมูลทั้งหมด: Timestamp, Event Type, User, Resource, Status, IP Address, User Agent, Details (JSON)
+
+3. ข้อมูลที่แสดงตรงตามข้อมูลจริงใน Audit Log Table
+
+4. ข้อมูลที่ละเอียดอ่อน (เช่น Password, API Key) ถูกปกปิด (Redacted)",,,
+TC-AUD-005,BR-013,FR-08,Audit Log Data Redaction,ตรวจสอบการปกปิดข้อมูลอ่อนไหวใน Audit Log,Security Testing / Privacy Compliance,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Audit Log UI
+
+3. มี Audit Log ที่มีข้อมูลสำคัญอยู่ในระบบ",Target Audit Log: Event ที่มี API Key หรือ Password,"1. Admin คลิกที่ Audit Log ที่มีข้อมูลสำคัญ
+
+2. ตรวจสอบรายละเอียดใน Modal/Drawer","1. ข้อมูลสำคัญและอ่อนไหวความปลอดภัยสูง เช่น รหัสผ่านผู้ใช้ หรือ API Key ต้องถูกกรองและปกปิดข้อมูลดิบออก (Redacted) 100%
+
+2. ไม่มีข้อมูลประเภท Secret หรือข้อมูลส่วนบุคคลระบุตัวตน (PII) รั่วไหลในรายละเอียด Audit Log
+
+3. ข้อมูลที่แสดงเป็นเพียง Masked Data (เช่en ******) เท่านั้น",,,
+TC-AUD-006,BR-013,FR-08,Audit Log Pagination,ตรวจสอบการแบ่งหน้า Audit Log,Functional Testing / Positive Test,1. มี Audit Log มากกว่า 50 รายการ,"Page: 1, Limit: 50","1. เปิดหน้า Audit Log
+2. เปลี่ยนหน้า","1. ระบบแสดง 50 รายการต่อหน้า
+2. สามารถเปลี่ยนหน้าได้
+3. จำนวนทั้งหมดแสดงถูกต้อง",,,
+TC-AUD-007,BR-013,FR-08,Audit Log - Search by User,ตรวจสอบการค้นหา Audit Log ตามผู้ใช้,Functional Testing / Positive Test,1. มี Audit Log หลายผู้ใช้,User: admin@company.com,"1. เปิดหน้า Audit Log
+2. กรอกชื่อผู้ใช้ในช่อง Search","1. ระบบแสดงเฉพาะ Log ของผู้ใช้ที่ค้นหา
+2. ผลลัพธ์ถูกต้อง",,,
+TC-AUD-008,BR-013,FR-08,Audit Log - Export JSON,ตรวจสอบการส่งออก Audit Log เป็น JSON,Functional Testing / Positive Test,1. มี Audit Log ในระบบ,Format: JSON,"1. กรอง Audit Log
+2. คลิก ""Export""
+3. เลือก Format เป็น JSON","1. ระบบสร้างไฟล์ JSON สำเร็จ
+2. ไฟล์ถูกดาวน์โหลด
+3. ข้อมูลในไฟล์ตรงตามที่กรอง",,,
+Dashboards,,,,,,,,,,,,
+TC-SYS-001,BR-001,FR-08,View System Dashboard,ตรวจสอบความถูกต้องในการดู System Dashboard,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า System Dashboard UI",N/A,"1. Admin นำทางไปยังหน้า System Dashboard
+
+2. ระบบแสดง System Dashboard","1. ระบบแสดง System Dashboard สำเร็จ
+
+2. แสดง Metrics: จำนวนผู้ใช้ทั้งหมด, ผู้ใช้ที่ใช้งานอยู่, Query Count, Error Rate, System Health
+
+3. แสดงกราฟแนวโน้มการใช้งาน (Usage Trends)
+
+4. ข้อมูลที่แสดงตรงตามข้อมูลจริงในระบบ",,,
+TC-SYS-002,BR-001,FR-08,View Usage Analytics,ตรวจสอบความถูกต้องในการดู Usage Analytics,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Usage Analytics UI","Date Range: Last 30 days
+
+Granularity: Daily","1. Admin นำทางไปยังหน้า Usage Analytics
+
+2. Admin เลือก Date Range และ Granularity
+
+3. ระบบแสดง Usage Analytics","1. ระบบแสดง Usage Analytics สำเร็จ
+
+2. แสดง Metrics: Token Usage, Query Count, Cost per User, Model Usage Distribution
+
+3. แสดงกราฟแนวโน้มการใช้งานตามช่วงเวลาที่เลือก
+
+4. ข้อมูลที่แสดงตรงตามข้อมูลจริงในระบบ",,,
+TC-SYS-003,BR-001,FR-08,View System Health Status,ตรวจสอบความถูกต้องในการดูสถานะสุขภาพระบบ,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า System Health UI",N/A,"1. Admin นำทางไปยังหน้า System Health
+
+2. ระบบแสดง System Health Status","1. ระบบแสดง System Health Status สำเร็จ
+
+2. แสดงสถานะของแต่ละ Component: Application DB, Redis Cache, Vector DB, LLM Providers, Data Sources
+
+3. แสดง Metrics: CPU Usage, Memory Usage, Disk Usage, Network I/O
+
+4. แสดง Alerts/Warnings ถ้ามี Component ที่มีปัญหา",,,
+TC-SYS-004,BR-001,FR-08,Configure System Settings,ตรวจสอบความถูกต้องในการกำหนดค่าระบบโดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า System Settings UI","Query Timeout: 15 seconds
+
+Row Limit: 50,000
+
+Cache TTL: 60 seconds","1. Admin นำทางไปยังหน้า System Settings
+
+2. Admin แก้ไขค่าตั้งค่าระบบ (เช่น Query Timeout, Row Limit, Cache TTL)
+
+3. คลิกปุ่ม ""Save Settings""","1. ระบบอัปเดตค่าตั้งค่าระบบในฐานข้อมูลสำเร็จ
+
+2. ค่าตั้งค่าใหม่ถูกนำไปใช้ทันที (Hot Reload)
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ System Settings Changed สำเร็จ
+
+4. ระบบแสดง Toast Notification ""Settings Saved Successfully!""",,,
+TC-SYS-005,BR-001,FR-08,Reset System Settings to Default,ตรวจสอบความถูกต้องในการรีเซ็ตค่าตั้งค่าระบบกลับค่าเริ่มต้น,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า System Settings UI
+
+3. Admin ได้ทำการแก้ไขค่าตั้งค่าระบบไปแล้ว",N/A,"1. Admin คลิกปุ่ม ""Reset to Defaults"" 
+
+2. ยืนยันการรีเซ็ตเมื่อระบบแจ้งเตือน","1. ระบบรีเซ็ตค่าตั้งค่าระบบกลับเป็นค่าเริ่มต้นสำเร็จ
+
+2. ค่าตั้งค่าทั้งหมดกลับสู่สถานะ Default ตามค่ากำหนดในระบบ
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ System Settings Reset สำเร็จ",,,
+TC-SYS-006,BR-001,FR-08,System Settings - Invalid Values,ตรวจสอบการปฏิเสธค่าตั้งค่าระบบที่ไม่ถูกต้อง,Functional Testing / Negative Test,1. Admin อยู่ที่หน้า System Settings,"Query Timeout: -5 (ค่าติดลบ)
+Row Limit: 0","1. กรอกค่าที่ไม่ถูกต้อง
+2. คลิก ""Save Settings""","1. ระบบแสดง ""Invalid value""
+2. ระบบไม่บันทึกค่า
+3. ระบบระบุฟิลด์ที่ผิด",,,
+TC-SYS-007,BR-001,FR-08,System Health - Component Down Alert,ตรวจสอบการแสดง Alert เมื่อ Component ล่ม,Functional Testing / Positive Test,1. มี Component ที่ Down (เช่น Redis),N/A,"1. เปิดหน้า System Health
+2. ตรวจสอบสถานะ Component","1. ระบบแสดงสถานะ ""Down"" สำหรับ Component ที่ล่ม
+2. ระบบแสดง Alert/Warning สีแดง
+3. ระบบแสดงเวลาที่ Component ล่ม",,,
+TC-KB-ADM-001,BR-001,FR-12,Upload Knowledge Base Item,ตรวจสอบการอัปโหลด Knowledge Base Item,Functional Testing / Positive Test,1. Admin ล็อกอิน 2. อยู่ที่หน้า KB Management,"File: glossary.csv
+Type: Glossary","1. คลิก ""Add Knowledge Item""
+2. เลือกประเภท (Glossary, Schema Mapping, Business Rule)
+3. อัปโหลดไฟล์
+4. คลิก ""Save""","1. ระบบอัปโหลดไฟล์สำเร็จ
+2. Knowledge Item ปรากฏในรายการ
+3. ระบบบันทึก Audit Log KB Item Added",,,
+TC-KB-ADM-002,BR-001,FR-12,Edit Knowledge Base Item,ตรวจสอบการแก้ไข Knowledge Base Item,Functional Testing / Positive Test,1. มี Knowledge Item ในระบบ,Target: Glossary v1,"1. คลิก Edit บน Knowledge Item
+2. แก้ไขเนื้อหา
+3. คลิก Save","1. ระบบอัปเดตเนื้อหาสำเร็จ
+2. เนื้อหาใหม่ปรากฏในรายการ
+3. ระบบบันทึก Audit Log",,,
+TC-KB-ADM-003,BR-001,FR-12,Delete Knowledge Base Item,ตรวจสอบการลบ Knowledge Base Item,Functional Testing / Positive Test,1. มี Knowledge Item ในระบบ,Target: Old Glossary,"1. คลิก Delete บน Knowledge Item
+2. ยืนยันการลบ","1. ระบบลบ Knowledge Item สำเร็จ
+2. Item ไม่ปรากฏในรายการ
+3. ระบบบันทึก Audit Log",,,
+TC-KB-ADM-004,BR-001,FR-12,Toggle Knowledge Base Item Status,ตรวจสอบการเปิด/ปิดสถานะ Knowledge Base Item,Functional Testing / Positive Test,1. มี Knowledge Item ในระบบ,"Target: Glossary v1
+Action: Disable",1. คลิก Toggle บน Knowledge Item,"1. ระบบเปลี่ยนสถานะสำเร็จ
+2. Item ที่ Disabled ไม่ถูกใช้ใน RAG Context
+3. ระบบบันทึก Audit Log",,,
+Workspace,,,,,,,,,,,,
+TC-WRK-001,BR-001,FR-04,Create Workspace,ตรวจสอบความถูกต้องในการสร้าง Workspace ใหม่โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Workspace Management UI","Workspace Name: Sales Analytics
+
+Workspace Slug: sales-analytics","1. Admin คลิกปุ่ม ""Create Workspace"" 
+
+2. กรอกชื่อ Workspace
+
+3. กรอก Slug (URL identifier)
+
+4. คลิกปุ่ม ""Create""","1. ระบบสร้าง Workspace ใหม่ในฐานข้อมูลสำเร็จ
+
+2. Workspace ใหม่ปรากฏในรายชื่อ Workspace
+
+3. Admin ถูกกำหนดเป็น Owner ของ Workspace ใหม่โดยอัตโนมัติ
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Workspace Created สำเร็จ",,,
+TC-WRK-002,BR-001,FR-04,Delete Workspace,ตรวจสอบความถูกต้องในการลบ Workspace โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Workspace Management UI
+
+3. มี Workspace ที่ต้องการลบอยู่ในระบบ",Target Workspace: Old Analytics,"1. Admin คลิกที่ Workspace ที่ต้องการลบ
+
+2. คลิกปุ่ม ""Delete"" 
+
+3. ยืนยันการลบเมื่อระบบแจ้งเตือน","1. ระบบลบ Workspace ออกจากฐานข้อมูลสำเร็จ
+
+2. Workspace ไม่ปรากฏในรายชื่อ Workspace แล้ว
+
+3. ข้อมูลทั้งหมดใน Workspace (Dashboards, Queries) ถูกลบออก
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Workspace Deleted สำเร็จ",,,
+TC-WRK-003,BR-001,FR-04,Add User to Workspace,ตรวจสอบความถูกต้องในการเพิ่มผู้ใช้ใน Workspace โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Workspace Management UI
+
+3. มี Workspace และผู้ใช้ที่ต้องการเพิ่มอยู่ในระบบ","Target Workspace: Sales Analytics
+
+Target User: testuser@company.com
+
+Role: Editor","1. Admin คลิกที่ Workspace ที่ต้องการเพิ่มผู้ใช้
+
+2. คลิกปุ่ม ""Add Member"" 
+
+3. เลือกผู้ใช้จากรายชื่อ
+
+4. เลือกบทบาท (Role) ที่ต้องการกำหนด
+
+5. คลิกปุ่ม ""Add""","1. ระบบเพิ่มผู้ใช้ใน Workspace สำเร็จ
+
+2. ผู้ใช้ปรากฏในรายชื่อสมาชิกของ Workspace
+
+3. ผู้ใช้ได้รับสิทธิ์ตามบทบาทที่กำหนดใน Workspace
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ User Added to Workspace สำเร็จ",,,
+TC-WRK-004,BR-001,FR-04,Remove User from Workspace,ตรวจสอบความถูกต้องในการลบผู้ใช้ออกจาก Workspace โดย Admin,Functional Testing / Positive Test,"1. Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว
+
+2. Admin อยู่ที่หน้า Workspace Management UI
+
+3. มีผู้ใช้ใน Workspace ที่ต้องการลบอยู่ในระบบ","Target Workspace: Sales Analytics
+
+Target User: testuser@company.com","1. Admin คลิกที่ Workspace ที่ต้องการลบผู้ใช้
+
+2. คลิกที่ผู้ใช้ที่ต้องการลบ
+
+3. คลิกปุ่ม ""Remove"" 
+
+4. ยืนยันการลบเมื่อระบบแจ้งเตือน","1. ระบบลบผู้ใช้ออกจาก Workspace สำเร็จ
+
+2. ผู้ใช้ไม่ปรากฏในรายชื่อสมาชิกของ Workspace แล้ว
+
+3. ผู้ใช้ไม่สามารถเข้าถึงข้อมูลใน Workspace นี้ได้อีก
+
+4. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ User Removed from Workspace สำเร็จ",,,
+TC-WRK-005,BR-001,FR-04,Edit Workspace Name,ตรวจสอบการแก้ไขชื่อ Workspace,Functional Testing / Positive Test,1. มี Workspace ในระบบ,"New Name: ""Sales & Marketing Analytics""","1. คลิก Edit บน Workspace
+2. แก้ไขชื่อ
+3. คลิก Save","1. ระบบอัปเดตชื่อสำเร็จ
+2. ชื่อใหม่ปรากฏในรายการ
+3. ระบบบันทึก Audit Log",,,
+TC-WRK-006,BR-001,FR-04,Update Member Role in Workspace,ตรวจสอบการเปลี่ยนบทบาทสมาชิกใน Workspace,Functional Testing / Positive Test,1. มีสมาชิกใน Workspace,"Member: user@genbi.io
+New Role: Owner","1. คลิกที่ Workspace
+2. เลือกสมาชิก
+3. เปลี่ยน Role
+4. คลิก Save","1. ระบบอัปเดต Role สำเร็จ
+2. สมาชิกมีสิทธิ์ตาม Role ใหม่
+3. ระบบบันทึก Audit Log",,,
+TC-WRK-007,BR-001,FR-04,Delete Workspace with Active Members,ตรวจสอบการลบ Workspace ที่มีสมาชิกอยู่,Functional Testing / Negative Test,1. Workspace มีสมาชิก Active,Target: Active Workspace,"1. คลิก Delete บน Workspace ที่มีสมาชิก
+2. ยืนยันการลบ","1. ระบบแสดง Warning ""This workspace has active members""
+2. ระบบต้องการยืนยันเพิ่มเติม
+3. หากยืนยัน ระบบลบพร้อมสมาชิกทั้งหมด
+4. ระบบบันทึก Audit Log",,,
+Database Security,,,,,,,,,,,,
+TC-SEC-001,BR-001,FR-19,Verify Data Encryption at Rest,ตรวจสอบความปลอดภัยในการเข้ารหัสและจัดเก็บข้อมูลสำคัญ,Compliance Audit / Database Security,มีกระบวนการลงทะเบียนผู้ใช้หรือบันทึกข้อมูลเข้าใช้งานระบบผ่าน Admin Management,"DB Query Select on Table: users, credentials, data_sources, llm_models","1. Admin ตรวจสอบโครงสร้างและการจัดเก็บข้อมูลในตาราง users, credentials, data_sources, llm_models บน Application PostgreSQL โดยตรง","1. ข้อมูลรหัสผ่าน (Password) ต้องผ่านกระบวนการแปลงรหัสด้วย Cryptographic Hash ที่ปลอดภัยและมีมาตรฐานสูง (เช่น Argon2 หรือ bcrypt)
+
+2. ข้อมูล External API Key/Credential ต้องถูกเข้ารหัสด้วยมาตรฐาน AES-256 เท่านั้น
+
+3. ต้องไม่มีข้อมูลดิบในรูปแบบข้อความปกติ (Plaintext) ปรากฏในฐานข้อมูลทุกกรณี",,,
+TC-SEC-002,BR-001,FR-45,Verify Sensitive Data Redaction in Logs,ตรวจสอบการปกปิดข้อมูลอ่อนไหวส่วนบุคคลในประวัติระบบ,Security Audit / Privacy Compliance,แพลตฟอร์มมีการรันระบบ Observability และจัดเก็บ Trace ข้อมูลผ่าน HTTP API ของ Langfuse หรือ OpenTelemetry,Langfuse Dashboard / OTLP Dump Logs,1. Admin ตรวจสอบบันทึกข้อมูลดิบ (Logs/Traces) ที่เกิดขึ้นในระหว่างกระบวนการทำ Admin Management และ Token Exchange,"1. ข้อมูลสำคัญและอ่อนไหวความปลอดภัยสูง เช่น รหัสผ่านผู้ใช้ หรือ OAuth Access Token ต้องถูกกรองและปกปิดข้อมูลดิบออก (Redacted) 100% ก่อนการบันทึก
+
+2. ไม่มีข้อมูลประเภท Secret หรือข้อมูลส่วนบุคคลระบุตัวตน (PII) รั่วไหลไปยังระบบวิเคราะห์ภายนอกองค์กร",,,
+TC-SEC-003,BR-001,FR-01,Verify SQL Injection Prevention,ตรวจสอบระบบป้องกันการโจมตีทางไซเบอร์ประเภท SQL Injection บนช่องกรอกข้อมูล Admin,Penetration Testing / Injection Safe,"ผู้ใช้อยู่ที่หน้าจอ Admin UI ของระบบ""","Input Fields: ช่องกรอกข้อมูลทั้งหมดในหน้า Admin (User Name, Email, Role Name, etc.)","1. Admin พยายามกรอกค่าชุดคำสั่งแทรกแซงฐานข้อมูลในช่องกรอกข้อมูลต่างๆ เช่น ' OR '1'='1
+
+2. คลิกปุ่มบันทึกหรือส่งข้อมูล","1. ระบบฐานข้อมูลหลักต้องทำงานได้ปกติและไม่เกิดการรั่วไหลของข้อมูลภายใน
+
+2. ข้อมูลขาเข้าถูกตรวจสอบและกรองอย่างปลอดภัยผ่านโครงสร้าง Rust validator และ sqlparser-rs
+
+3. ระบบปฏิเสธการเข้าใช้งานอย่างปลอดภัยและส่งข้อความ Error ทั่วไปกลับไปที่หน้าจอ UI",,,
+TC-SEC-004,BR-001,FR-01,Verify XSS Prevention,ตรวจสอบระบบป้องกันการโจมตีทางไซเบอร์ประเภท XSS บนช่องกรอกข้อมูล Admin,Penetration Testing / Injection Safe,"ผู้ใช้อยู่ที่หน้าจอ Admin UI ของระบบ""","Input Fields: ช่องกรอกข้อมูลทั้งหมดในหน้า Admin (User Name, Description, etc.)","1. Admin พยายามกรอกค่าชุดคำสั่ง JavaScript ในช่องกรอกข้อมูลต่างๆ เช่น <script>alert('XSS')</script>
+
+2. คลิกปุ่มบันทึกหรือส่งข้อมูล","1. ระบบต้องทำงานได้ปกติและไม่เกิดการ execute JavaScript ใดๆ
+
+2. ข้อมูลขาเข้าถูกตรวจสอบและกรองอย่างปลอดภัยผ่านโครงสร้าง React/Next.js sanitization
+
+3. ระบบแสดงข้อมูลเป็น Plain Text โดยไม่ execute script ใดๆ",,,
+TC-SEC-005,BR-001,FR-01,Verify CSRF Protection,ตรวจสอบระบบป้องกันการโจมตีทางไซเบอร์ประเภท CSRF บนการกระทำของ Admin,Security Testing / CSRF Protection,"ผู้ใช้อยู่ที่หน้าจอ Admin UI ของระบบและล็อกอินอยู่""","Action: การกระทำที่มีผลต่อข้อมูล (Create User, Delete User, Change Role, etc.)","1. Admin พยายามส่งคำขอ POST โดยตรงโดยไม่มี CSRF Token
+
+2. ตรวจสอบว่าระบบปฏิเสธคำขอหรือไม่","1. ระบบต้องปฏิเสธคำขอที่ไม่มี CSRF Token ที่ถูกต้อง
+
+2. ระบบต้องส่งคืนค่า HTTP Status 403 Forbidden
+
+3. ระบบต้องไม่ดำเนินการใดๆ ที่มีผลต่อข้อมูล",,,
+TC-SEC-006,BR-001,FR-01,Rate Limiting on Admin API,ตรวจสอบ Rate Limiting บน Admin API Endpoints,Security Testing / Boundary,1. Admin ล็อกอิน,Request: 100 requests/second,1. ส่ง HTTP Request ไปยัง Admin API 100 ครั้งใน 1 วินาที,"1. ระบบส่ง HTTP 429 Too Many Requests
+2. ระบบบล็อกคำขอชั่วคราว
+3. ระบบบันทึก Audit Log Rate Limit Triggered",,,
+TC-SEC-007,BR-001,FR-19,Verify API Key Encryption in DB,ตรวจสอบการเข้ารหัส API Key ในฐานข้อมูล,Compliance Audit / Database Security,1. มี LLM Model ที่มี API Key ในระบบ,DB Query: SELECT api_key FROM llm_models,1. ตรวจสอบค่าในคอลัมน์ api_key ในตาราง llm_models,"1. API Key ถูกเข้ารหัสด้วย AES-256
+2. ไม่มี Plaintext API Key ในฐานข้อมูล
+3. ค่าที่เก็บเป็น Ciphertext เท่านั้น",,,
+TC-SEC-008,BR-001,FR-19,Verify Data Source Password Encryption,ตรวจสอบการเข้ารหัส Password ของ Data Source ในฐานข้อมูล,Compliance Audit / Database Security,1. มี Data Source ที่มี Password ในระบบ,DB Query: SELECT password FROM data_sources,1. ตรวจสอบค่าในคอลัมน์ password ในตาราง data_sources,"1. Password ถูกเข้ารหัสด้วย AES-256
+2. ไม่มี Plaintext Password ในฐานข้อมูล",,,
+Permission,,,,,,,,,,,,
+TC-PER-001,BR-001,FR-04,Verify Admin Permission Enforcement,ตรวจสอบการบังคับใช้สิทธิ์ Admin ในทุกเลเยอร์ของระบบ,Security Testing / Permission Enforcement,Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว,"Action: การกระทำทั้งหมดที่ Admin สามารถทำได้ (Create User, Delete User, Change Role, Create Workspace, etc.)","1. Admin ทำการกระทำต่างๆ ในระบบ
+
+2. ตรวจสอบว่าระบบอนุญาตการกระทำทั้งหมดของ Admin","1. ระบบต้องอนุญาตการกระทำทั้งหมดของ Admin ในทุกเลเยอร์ (UI, API, Backend)
+
+2. ระบบต้องไม่บล็อกการกระทำใดๆ ของ Admin
+
+3. ระบบต้องบันทึกประวัติการทำงาน (Audit Log) ทุกการกระทำของ Admin",,,
+TC-PER-002,BR-001,FR-04,Verify Non-Admin Permission Restriction,ตรวจสอบการจำกัดสิทธิ์ผู้ใช้ที่ไม่ใช่ Admin,Security Testing / Permission Enforcement,ผู้ใช้ที่ไม่ใช่ Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว,"Action: การกระทำที่เฉพาะ Admin เท่านั้น (Create User, Delete User, Change Role, Create Workspace, etc.)","1. ผู้ใช้ที่ไม่ใช่ Admin พยายามทำการกระทำที่เฉพาะ Admin
+
+2. ตรวจสอบว่าระบบปฏิเสธการกระทำหรือไม่","1. ระบบต้องปฏิเสธการกระทำที่เฉพาะ Admin ในทุกเลเยอร์ (UI, API, Backend)
+
+2. ระบบต้องซ่อนปุ่ม/เมนูที่ไม่ได้รับอนุญาตใน UI
+
+3. ระบบต้องส่งคืนค่า HTTP Status 403 Forbidden สำหรับ API Request
+
+4. ระบบต้องบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Permission Denied",,,
+TC-PER-003,BR-001,FR-04,Verify Multi-tenant Data Separation,ตรวจสอบการแยกข้อมูลข้าม Workspace อย่างปลอดภัย,Security Testing / Multi-tenant Gate,User A (Admin ใน Workspace 1) และ User B (Admin ใน Workspace 2),Workspace 1 Data vs Workspace 2 Data,1. Admin ใน Workspace 1 พยายามยิง Direct HTTP Request ส่ง Request ไปยัง API Endpoint ของ Workspace 2,"1. ระบบส่วนหลัง Axum บล็อกคำขออย่างปลอดภัยและส่งคืนค่า HTTP Status 403 Forbidden
+
+2. ข้อมูลถูกตัดขาดและแบ่งสิทธิ์ Multi-tenant อย่างเด็ดขาด
+
+3. ระบบบันทึกประวัติการทำงาน (Audit Log) เหตุการณ์ Cross-Workspace Access Denied",,,
+TC-SADMIN-001,BR-001,FR-04,Super Admin - Promote User to Admin,ตรวจสอบการเลื่อนตำแหน่งผู้ใช้เป็น Admin โดย Super Admin,Functional Testing / Positive Test,1. Super Admin ล็อกอิน 2. มีผู้ใช้ที่ต้องการเลื่อนตำแหน่ง,"Target: user@genbi.io
+New Role: Admin","1. ไปที่หน้า Super Admin > Users
+2. เลือกผู้ใช้
+3. เปลี่ยน Role เป็น Admin
+4. คลิก Save","1. ระบบอัปเดต Role สำเร็จ
+2. ผู้ใช้เข้าถึง Admin Dashboard ได้
+3. ระบบบันทึก Audit Log Role Promoted",,,
+TC-SADMIN-002,BR-001,FR-04,Super Admin - Demote Admin to User,ตรวจสอบการลดตำแหน่ง Admin เป็น User โดย Super Admin,Functional Testing / Positive Test,1. Super Admin ล็อกอิน 2. มี Admin ที่ต้องการลดตำแหน่ง,"Target: admin2@genbi.io
+New Role: User","1. ไปที่หน้า Super Admin > Users
+2. เลือก Admin
+3. เปลี่ยน Role เป็น User
+4. คลิก Save","1. ระบบอัปเดต Role สำเร็จ
+2. ผู้ใช้ไม่สามารถเข้าถึง Admin Dashboard ได้อีก
+3. Session ของผู้ใช้ถูกทำลาย
+4. ระบบบันทึก Audit Log Role Demoted",,,
+TC-SADMIN-003,BR-001,FR-04,Admin Cannot Promote to Super Admin,ตรวจสอบการปฏิเสธเมื่อ Admin พยายามเลื่อนตำแหน่งเป็น Super Admin,Security Testing / Negative Test,1. Admin (ไม่ใช่ Super Admin) ล็อกอิน,"Target: self
+Action: Promote to Super Admin",1. Admin พยายามเปลี่ยน Role ตัวเองเป็น Super Admin,"1. ระบบปฏิเสธ
+2. ระบบแสดง ""Insufficient permissions""
+3. ระบบบันทึก Audit Log Permission Denied",,,
+ Integration,,,,,,,,,,,,
+TC-INT-001,BR-001,FR-08,Verify Admin Dashboard Integration,ตรวจสอบการทำงานร่วมกันของ Admin Dashboard กับระบบอื่นๆ,Integration Testing / End-to-End,Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว,N/A,"1. Admin เปิด Admin Dashboard
+
+2. ตรวจสอบข้อมูลจากทุก Module (User Management, Role Configuration, Data Source, Model Management, Audit Log, System Health)","1. ระบบแสดงข้อมูลจากทุก Module อย่างถูกต้อง
+
+2. ข้อมูลที่แสดงตรงตามข้อมูลจริงในระบบ
+
+3. ระบบอัปเดตข้อมูลแบบ Real-time หรือตาม Cache TTL ที่กำหนด
+
+4. ระบบไม่มี Error ในการดึงข้อมูลจากแต่ละ Module",,,
+TC-INT-002,BR-001,FR-08,Verify Audit Log Integration,ตรวจสอบการทำงานร่วมกันของ Audit Log กับระบบอื่นๆ,Integration Testing / End-to-End,Admin ล็อกอินเข้าระบบเรียบร้อยแล้ว,"Action: การกระทำต่างๆ ในระบบ (Create User, Change Role, etc.)","1. Admin ทำการกระทำต่างๆ ในระบบ
+
+2. ตรวจสอบ Audit Log Dashboard","1. ระบบต้องบันทึกประวัติการทำงาน (Audit Log) ทุกการกระทำสำเร็จ
+
+2. Audit Log ต้องปรากฏใน Audit Log Dashboard ทันทีหรือตาม Cache TTL
+
+3. ข้อมูลใน Audit Log ต้องถูกต้องและครบถ้วน
+
+4. ระบบไม่มี Error ในการบันทึก Audit Log",,,
+TC-INT-003,BR-001,FR-17,Verify Data Source Integration,ตรวจสอบการทำงานร่วมกันของ Data Source กับระบบ Query Execution,Integration Testing / End-to-End,Admin ล็อกอินเข้าระบบเรียบร้อยแล้วและมี Data Source ที่เชื่อมต่อได้อยู่ในระบบ,Target Data Source: Sales DW,"1. Admin ทดสอบการเชื่อมต่อ Data Source
+
+2. ผู้ใช้ที่มีสิทธิ์ส่งคำถามผ่าน Chat UI
+
+3. ตรวจสอบว่า Query สามารถรันได้","1. ระบบต้องเชื่อมต่อกับ Data Source สำเร็จ
+
+2. ระบบต้องสามารถรัน Query ผ่าน Data Source ที่เชื่อมต่อได้
+
+3. ผลลัพธ์ที่ได้ต้องถูกต้องตามข้อมูลใน Data Source
+
+4. ระบบไม่มี Error ในการ Query ข้อมูล",,,
+TC-INT-004,BR-001,FR-17,Verify LLM Model Integration,ตรวจสอบการทำงานร่วมกันของ LLM Model กับระบบ Text-to-SQL,Integration Testing / End-to-End,"Admin ล็อกอินเข้าระบบเรียบร้อยแล้วและมี LLM Model ที่ลงทะเบียนไว้อยู่ในระบบ""",Target Model: GPT-4o,"1. Admin ทดสอบการเชื่อมต่อ LLM Model
+
+2. ผู้ใช้ที่มีสิทธิ์ส่งคำถามผ่าน Chat UI
+
+3. ตรวจสอบว่า LLM สามารถสร้าง SQL ได้","1. ระบบต้องเชื่อมต่อกับ LLM Model สำเร็จ
+
+2. ระบบต้องสามารถส่งคำถามไปยัง LLM Model ได้
+
+3. LLM Model ต้องสร้าง SQL ที่ถูกต้อง
+
+4. ระบบไม่มี Error ในการสื่อสารกับ LLM Model",,,
+TC-INT-005,BR-001,FR-08,Verify SSE Notification Integration,ตรวจสอบการทำงานร่วมกันของ SSE Notification กับ Audit Log,Integration Testing / End-to-End,1. Admin ล็อกอิน 2. มี Notification System ทำงาน,N/A,"1. ทำ Action ที่ทำให้เกิด Notification
+2. ตรวจสอบ SSE Stream
+3. ตรวจสอบ Audit Log","1. Notification ส่งผ่าน SSE สำเร็จ
+2. Audit Log บันทึกเหตุการณ์สำเร็จ
+3. ข้อมูลตรงกันทั้งสองระบบ",,,
+TC-INT-006,BR-001,FR-12,Verify Knowledge Base Integration with RAG,ตรวจสอบการทำงานร่วมกันของ Knowledge Base กับ RAG Pipeline,Integration Testing / End-to-End,1. มี Knowledge Items ในระบบ 2. Data Source เชื่อมต่อแล้ว,"Question: ""นิยามยอดขายคืออะไร""","1. ส่งคำถามที่ต้องอ้างอิง Glossary
+2. ตรวจสอบผลลัพธ์","1. RAG ดึง Context จาก Knowledge Base สำเร็จ
+2. ผลลัพธ์อ้างอิงนิยามจาก Glossary
+3. SQL ที่สร้างถูกต้องตามนิยาม",,,
