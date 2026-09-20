@@ -12,6 +12,9 @@ node_modules/
 */node_modules/
 .pnpm-store/
 
+# Internal docs and skills agent
+skills-agent/
+
 # Build & Distribution outputs
 dist/
 */dist/
