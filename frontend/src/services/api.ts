@@ -169,20 +169,32 @@ export const fallbackVocabs: Vocabulary[] = [
 export const fallbackQuestions: ExamQuestion[] = [];
 
 export async function fetchVocabularies(chapter?: number, category?: string): Promise<Vocabulary[]> {
+  const getFilteredFallback = () => {
+    return fallbackVocabs.filter(v => {
+      if (chapter && v.chapter_number !== chapter) return false;
+      if (category && category !== 'all') {
+        if (category === 'country') return v.category === 'country' || v.category === 'nationality';
+        if (category === 'pronoun') return v.category === 'pronoun' || v.category === 'suffix';
+        if (category === 'phrase') return v.category === 'phrase' || v.category === 'interrogative' || v.category === 'grammar';
+        return v.category === category;
+      }
+      return true;
+    });
+  };
+
   try {
     const params = new URLSearchParams();
     if (chapter) params.append('chapter', chapter.toString());
-    if (category) params.append('category', category);
+    if (category && category !== 'all') params.append('category', category);
     const res = await fetch(`${API_BASE}/vocabularies?${params.toString()}`);
     if (!res.ok) throw new Error('API failed');
     const json = await res.json();
-    return json.data || fallbackVocabs;
+    if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+      return json.data;
+    }
+    return getFilteredFallback();
   } catch {
-    return fallbackVocabs.filter(v => {
-      if (chapter && v.chapter_number !== chapter) return false;
-      if (category && v.category !== category) return false;
-      return true;
-    });
+    return getFilteredFallback();
   }
 }
 

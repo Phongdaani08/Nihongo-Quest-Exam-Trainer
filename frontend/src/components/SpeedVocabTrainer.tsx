@@ -145,15 +145,16 @@ export const SpeedVocabTrainer: React.FC = () => {
             }}
           >
             <option value="all">ทั้งหมด (ทุกหมวด {vocabs.length} คำ)</option>
+            <option value="pronoun">สรรพนาม & บุคคล (Pronouns)</option>
+            <option value="country">ประเทศ & สัญชาติ (Countries)</option>
+            <option value="occupation">อาชีพ / สถานะ (Occupations)</option>
+            <option value="place">สถานที่ & สถาบัน (Places)</option>
+            <option value="demonstrative">คำชี้บ่ง (kore/sore/are/kono/sono/ano)</option>
             <option value="object">สิ่งของรอบตัว (Objects)</option>
             <option value="katakana">คำทับศัพท์ Katakana</option>
-            <option value="occupation">อาชีพ / บุคคล</option>
-            <option value="place">สถานที่ / สถาบัน</option>
-            <option value="country">ประเทศ & สัญชาติ</option>
-            <option value="demonstrative">คำชี้บ่ง (kore/sore/are/kono/sono/ano)</option>
             <option value="number">ตัวเลข (0-10)</option>
             <option value="language">ภาษา (Eigo/Nihongo...)</option>
-            <option value="phrase">สำนวนทักทาย & ตอบรับ</option>
+            <option value="phrase">สำนวนทักทาย & ตอบรับ (Phrases)</option>
           </select>
 
           <button onClick={loadVocabs} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>
