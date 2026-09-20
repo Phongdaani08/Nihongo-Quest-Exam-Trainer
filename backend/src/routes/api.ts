@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { VocabController } from '../controllers/vocab.controller.js';
 import { ExamController } from '../controllers/exam.controller.js';
+import { TTSController } from '../controllers/tts.controller.js';
 
 export const router = Router();
+
+// Audio TTS Streamer
+router.get('/tts', TTSController.streamAudio);
 
 // Vocabulary & Curriculum
 router.get('/vocabularies', VocabController.getVocabularies);
