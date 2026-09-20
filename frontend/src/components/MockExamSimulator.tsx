@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Timer, Infinity as InfinityIcon, CheckCircle2, ArrowRight, RotateCcw, Award, AlertCircle, Volume2 } from 'lucide-react';
+import { Timer, Infinity as InfinityIcon, CheckCircle2, ArrowRight, RotateCcw, AlertCircle, Volume2, Play, ShieldCheck, Sparkles } from 'lucide-react';
 import { playJapaneseAudio, playThaiAudio } from '../utils/speech';
 import { fallbackVocabs, submitExamResult } from '../services/api';
 import { allSection3Pool, VisualQuestionItem } from './VisualQAArena';
@@ -241,7 +241,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Mode Selector & Status Header */}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff' }}>
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span className="badge badge-primary">
@@ -290,71 +290,208 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
         )}
       </div>
 
-      {/* IDLE SELECTION VIEW */}
-      {examState === 'idle' && (
-        <div className="card" style={{ padding: '40px 32px', backgroundColor: '#ffffff', textAlign: 'center' }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '50%',
-            backgroundColor: 'var(--primary-50)',
-            color: 'var(--primary-600)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
-          }}>
-            <Award size={28} />
+      {/* IDLE VIEW: DEDICATED FOR TIMED 3-MIN EXAM */}
+      {examState === 'idle' && examMode === 'timed_3min' && (
+        <div className="card" style={{ padding: '36px 32px', backgroundColor: 'var(--bg-surface)', maxWidth: '780px', margin: '0 auto', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--primary-50)',
+                color: 'var(--primary-600)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid var(--primary-border)',
+                flexShrink: 0,
+              }}
+            >
+              <Timer size={26} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span className="badge badge-primary">โหมดสอบทางการ</span>
+                <span className="badge badge-ref">JN60101 PIM</span>
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+                ห้องสอบจำลองจับเวลาเสมือนจริง 3 นาที (Timed Mock Exam)
+              </h3>
+            </div>
           </div>
-          <h3 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>
-            เลือกรูปแบบการฝึกสอบที่ต้องการ
-          </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '560px', margin: '0 auto 28px' }}>
-            คุณสามารถเลือกสอบแบบจับเวลาเสมือนจริง 3 นาที หรือเลือกฝึกวนไปเรื่อยๆ โดยไม่จำกัดเวลา พร้อมสลับส่วนที่ 1, 2, 3 ได้อย่างอิสระตลอดเวลา
+
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+            จำลองสถานการณ์การสอบปากเปล่าและภาพจริง 15 ข้อ เวลาถอยหลัง 180 วินาที เมื่อกดปุ่มเริ่มสอบ ระบบจะเริ่มนับเวลาทันทีและแสดงข้อสอบชุดที่ 1
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxWidth: '640px', margin: '0 auto' }}>
-            <button
-              onClick={() => handleStartExam('timed_3min')}
-              className="card"
-              style={{
-                padding: '24px',
-                textAlign: 'left',
-                border: '2px solid var(--border-subtle)',
-                backgroundColor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-600)', marginBottom: '8px' }}>
-                <Timer size={20} />
-                <strong style={{ fontSize: '16px' }}>1. สอบจำลองจริง (3 นาที)</strong>
+          {/* Exam Structure Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ padding: '14px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-600)', marginBottom: '4px' }}>ส่วนที่ 1: แนะนำตัว</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}>5 ข้อ (5 คะแนน)</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>เรียงประโยค Jiko-shokai</div>
+            </div>
+
+            <div style={{ padding: '14px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-600)', marginBottom: '4px' }}>ส่วนที่ 2: ไวยากรณ์</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}>5 ข้อ (5 คะแนน)</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>แปลไทย-ญี่ปุ่น Flash Vocab</div>
+            </div>
+
+            <div style={{ padding: '14px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-600)', marginBottom: '4px' }}>ส่วนที่ 3: ตอบคำถามภาพ</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}>5 ข้อ (5 คะแนน)</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Visual Q&A จากภาพจริง</div>
+            </div>
+          </div>
+
+          {/* Rules & Pass Mark */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', backgroundColor: 'var(--primary-50)', borderRadius: '8px', border: '1px solid var(--primary-border)', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <ShieldCheck size={20} color="var(--primary-600)" />
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-700)' }}>เกณฑ์การประเมินผลผ่าน: 12 / 15 คะแนน (80%)</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>เวลาทั้งหมด: 3 นาที (180 วินาที) • สลับข้ามส่วนได้ตลอดเวลา</div>
               </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                จำลองเวลาสอบจริง 180 วินาที รันข้อสอบ 3 ส่วนต่อเนื่อง พร้อมประเมินคะแนนและจุดอ่อนหลังสอบเสร็จ
-              </p>
-            </button>
+            </div>
 
             <button
-              onClick={() => handleStartExam('endless_infinite')}
-              className="card"
+              onClick={() => playJapaneseAudio('はじめまして。よろしくおねがいします。')}
+              className="btn-outline"
+              style={{ fontSize: '12px', padding: '6px 10px', backgroundColor: 'var(--bg-surface)' }}
+            >
+              <Volume2 size={13} color="var(--primary-600)" />
+              <span>ทดสอบเสียงก่อนสอบ</span>
+            </button>
+          </div>
+
+          {/* Primary Action Button */}
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={() => handleStartExam('timed_3min')}
+              className="btn-primary"
               style={{
-                padding: '24px',
-                textAlign: 'left',
-                border: '2px solid var(--border-subtle)',
-                backgroundColor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
+                width: '100%',
+                maxWidth: '360px',
+                padding: '14px 24px',
+                fontSize: '16px',
+                fontWeight: 800,
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success-600)', marginBottom: '8px' }}>
-                <InfinityIcon size={20} />
-                <strong style={{ fontSize: '16px' }}>2. ฝึกวนไม่จำกัด (Endless)</strong>
-              </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                ฝึกทำข้อสอบวนไปเรื่อยๆ ไม่มีหมดเวลา สามารถสลับไปซ้อมส่วนที่ 1, 2 หรือ 3 ได้ตลอดเวลาตามใจชอบ
-              </p>
+              <Play size={18} />
+              <span>เริ่มทำข้อสอบจับเวลา 3 นาที</span>
             </button>
+            <p style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '8px' }}>
+              เมื่อคลิกเริ่มสอบ เวลา 03:00 จะเริ่มนับถอยหลังทันที
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* IDLE VIEW: DEDICATED FOR ENDLESS PRACTICE */}
+      {examState === 'idle' && examMode === 'endless_infinite' && (
+        <div className="card" style={{ padding: '36px 32px', backgroundColor: 'var(--bg-surface)', maxWidth: '780px', margin: '0 auto', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--success-50)',
+                color: 'var(--success-600)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid var(--success-border)',
+                flexShrink: 0,
+              }}
+            >
+              <InfinityIcon size={26} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span className="badge badge-success">โหมดฝึกซ้อมไม่จำกัดเวลา</span>
+                <span className="badge badge-ref">Endless Continuous Practice</span>
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+                โหมดฝึกซ้อมวนซ้ำต่อเนื่อง (Endless Practice Arena)
+              </h3>
+            </div>
+          </div>
+
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
+            ฝึกทำข้อสอบสุ่มวนไปเรื่อยๆ โดยไม่มีเวลาจำกัด สามารถฝึกซ้อมจนเกิดความคุ้นเคยและแม่นยำ พร้อมระบบเฉลยและเสียงอ่านภาษาญี่ปุ่น/ไทยทุกข้อ
+          </p>
+
+          {/* Features Highlights */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ padding: '14px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--success-600)', marginBottom: '4px' }}>ไร้แรงกดดันเรื่องเวลา</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>ไม่จำกัดเวลา</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>คิดและทบทวนได้เต็มที่</div>
+            </div>
+
+            <div style={{ padding: '14px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--success-600)', marginBottom: '4px' }}>สุ่มโจทย์รอบด้าน</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>73+ คำศัพท์ & ภาพ</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>ครอบคลุมบทที่ 1 & 2</div>
+            </div>
+
+            <div style={{ padding: '14px', backgroundColor: 'var(--bg-app)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--success-600)', marginBottom: '4px' }}>ระบบเก็บสถิติ</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>Streak & Accuracy</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>วัดความต่อเนื่อง</div>
+            </div>
+          </div>
+
+          {/* Status Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', backgroundColor: 'var(--success-50)', borderRadius: '8px', border: '1px solid var(--success-border)', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Sparkles size={20} color="var(--success-600)" />
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--success-700)' }}>ระบบพร้อมเริ่มสุ่มโจทย์ฝึกทำทันที</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>คลิกเริ่มเพื่อเข้าสู่คำถามข้อที่ 1 และสามารถสลับส่วนที่ 1, 2, 3 ได้อิสระ</div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--success-700)', fontWeight: 600 }}>
+              คะแนนปัจจุบัน: {endlessStats.correct} / {endlessStats.total}
+            </div>
+          </div>
+
+          {/* Primary Action Button */}
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={() => handleStartExam('endless_infinite')}
+              style={{
+                width: '100%',
+                maxWidth: '360px',
+                padding: '14px 24px',
+                fontSize: '16px',
+                fontWeight: 800,
+                borderRadius: '8px',
+                backgroundColor: 'var(--success-600)',
+                color: '#ffffff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#15803d'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--success-600)'; }}
+            >
+              <Play size={18} />
+              <span>เริ่มต้นการฝึกซ้อมต่อเนื่อง</span>
+            </button>
+            <p style={{ fontSize: '11.5px', color: 'var(--text-faint)', marginTop: '8px' }}>
+              สามารถหยุดหรือเปลี่ยนส่วนได้ตลอดเวลาขณะทำแบบฝึกหัด
+            </p>
           </div>
         </div>
       )}
@@ -363,7 +500,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
       {examState === 'running' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* REAL-TIME SECTION SWITCHER BAR (Always Available During Exam!) */}
-          <div className="card" style={{ padding: '12px 18px', backgroundColor: '#ffffff' }}>
+          <div className="card" style={{ padding: '12px 18px', backgroundColor: 'var(--bg-surface)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>
                 แถบเลือกส่วนที่กำลังสอบ (สลับได้ตลอดเวลา):
@@ -390,7 +527,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
           {/* SECTION 1: INTERACTIVE JIKO SHOKAI ARENA */}
           {currentSection === 1 && (
-            <div className="card" style={{ padding: '28px', backgroundColor: '#ffffff' }}>
+            <div className="card" style={{ padding: '28px', backgroundColor: 'var(--bg-surface)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <span className="badge badge-primary">ส่วนที่ 1: แนะนำตนเอง (เรียงประโยคให้ถูกต้อง)</span>
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
@@ -463,7 +600,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                       onClick={() => handleRemoveTokenSec1(i)}
                       style={{
                         padding: '6px 12px',
-                        backgroundColor: '#ffffff',
+                        backgroundColor: 'var(--bg-surface)',
                         border: '1px solid var(--border-strong)',
                         borderRadius: 'var(--radius-md)',
                         fontWeight: 700,
@@ -523,7 +660,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
           {/* SECTION 2: SPEED FLASH TRANSLATE ARENA */}
           {currentSection === 2 && sec2Items[sec2CurrentIndex] && (
-            <div className="card" style={{ padding: '36px', textAlign: 'center', backgroundColor: '#ffffff' }}>
+            <div className="card" style={{ padding: '36px', textAlign: 'center', backgroundColor: 'var(--bg-surface)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <span className="badge badge-primary">ส่วนที่ 2: แปลไทยเป็นญี่ปุ่น</span>
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
@@ -632,7 +769,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                           padding: '6px',
                           borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--border-subtle)',
-                          backgroundColor: '#ffffff',
+                          backgroundColor: 'var(--bg-surface)',
                           color: 'var(--primary-700)',
                           cursor: 'pointer',
                           display: 'flex',
@@ -660,7 +797,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
           {/* SECTION 3: PURE VISUAL Q&A ARENA */}
           {currentSection === 3 && sec3Items[sec3CurrentIndex] && (
-            <div className="card" style={{ padding: '28px', backgroundColor: '#ffffff' }}>
+            <div className="card" style={{ padding: '28px', backgroundColor: 'var(--bg-surface)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
                 <span className="badge badge-primary">{sec3Items[sec3CurrentIndex].typeName}</span>
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
@@ -718,7 +855,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-md)',
                   padding: '12px',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'var(--bg-surface)',
                   textAlign: 'center',
                   minHeight: '260px',
                   display: 'flex',
@@ -787,7 +924,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                               padding: '6px',
                               borderRadius: 'var(--radius-sm)',
                               border: '1px solid var(--border-subtle)',
-                              backgroundColor: '#ffffff',
+                              backgroundColor: 'var(--bg-surface)',
                               color: 'var(--primary-700)',
                               cursor: 'pointer',
                               display: 'flex',
@@ -819,7 +956,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
       {/* FINISHED VIEW (TIMED MODE REPORT) */}
       {examState === 'finished' && finalReport && (
-        <div className="card" style={{ padding: '40px 32px', backgroundColor: '#ffffff', textAlign: 'center' }}>
+        <div className="card" style={{ padding: '40px 32px', backgroundColor: 'var(--bg-surface)', textAlign: 'center' }}>
           <div style={{
             width: '56px',
             height: '56px',

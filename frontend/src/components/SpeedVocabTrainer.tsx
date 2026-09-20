@@ -87,7 +87,7 @@ export const SpeedVocabTrainer: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Header Banner */}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff' }}>
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span className="badge badge-primary">ส่วนที่ 2 ของการสอบ (5 คะแนน)</span>
@@ -165,7 +165,7 @@ export const SpeedVocabTrainer: React.FC = () => {
 
       {/* Main Flashcard Quiz Area */}
       {currentItem && (
-        <div className="card" style={{ padding: '36px', textAlign: 'center', backgroundColor: '#ffffff', minHeight: '340px' }}>
+        <div className="card" style={{ padding: '36px', textAlign: 'center', backgroundColor: 'var(--bg-surface)', minHeight: '340px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <span className="badge badge-primary">คำที่ {currentIndex + 1} จาก {vocabs.length}</span>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -301,7 +301,7 @@ export const SpeedVocabTrainer: React.FC = () => {
                         padding: '6px',
                         borderRadius: 'var(--radius-sm)',
                         border: '1px solid var(--border-subtle)',
-                        backgroundColor: '#ffffff',
+                        backgroundColor: 'var(--bg-surface)',
                         color: 'var(--primary-700)',
                         cursor: 'pointer',
                         display: 'flex',

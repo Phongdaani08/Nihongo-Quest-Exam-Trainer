@@ -159,7 +159,7 @@ export const JikoShokaiTrainer: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header Banner */}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff' }}>
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span className="badge badge-primary">ส่วนที่ 1 ของการสอบ (5 คะแนน)</span>
@@ -184,7 +184,7 @@ export const JikoShokaiTrainer: React.FC = () => {
       </div>
 
       {/* Hobby Selector Bar */}
-      <div className="card" style={{ padding: '16px 20px', backgroundColor: '#ffffff' }}>
+      <div className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--bg-surface)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Sparkles size={16} color="var(--primary-600)" />
@@ -241,7 +241,7 @@ export const JikoShokaiTrainer: React.FC = () => {
       </div>
 
       {/* Interactive Assembly Arena */}
-      <div className="card" style={{ padding: '32px', backgroundColor: '#ffffff' }}>
+      <div className="card" style={{ padding: '32px', backgroundColor: 'var(--bg-surface)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
             <span className="badge badge-primary">{currentLine.titleTh}</span>
@@ -335,7 +335,7 @@ export const JikoShokaiTrainer: React.FC = () => {
                 onClick={() => handleRemoveToken(idx)}
                 style={{
                   padding: '8px 14px',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'var(--bg-surface)',
                   border: '1px solid var(--border-strong)',
                   borderRadius: 'var(--radius-md)',
                   fontWeight: 700,

@@ -42,7 +42,7 @@ export const VocabVault: React.FC = () => {
       </div>
 
       {/* Search & Filters */}
-      <div className="card" style={{ padding: '16px 20px', backgroundColor: '#ffffff', display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="card" style={{ padding: '16px 20px', backgroundColor: 'var(--bg-surface)', display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
           <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
@@ -113,7 +113,7 @@ export const VocabVault: React.FC = () => {
               flexDirection: 'column',
               justifyContent: 'space-between',
               gap: '12px',
-              backgroundColor: '#ffffff',
+              backgroundColor: 'var(--bg-surface)',
             }}
           >
             <div>

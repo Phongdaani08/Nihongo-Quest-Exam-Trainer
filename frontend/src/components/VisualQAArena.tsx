@@ -589,7 +589,7 @@ export const VisualQAArena: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Header Banner */}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff' }}>
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span className="badge badge-primary">ส่วนที่ 3 ของการสอบ</span>
@@ -642,7 +642,7 @@ export const VisualQAArena: React.FC = () => {
       </div>
 
       {/* Main Question Display Arena */}
-      <div className="card" style={{ padding: '28px', backgroundColor: '#ffffff' }}>
+      <div className="card" style={{ padding: '28px', backgroundColor: 'var(--bg-surface)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="badge badge-primary">{currentQ.typeName}</span>
@@ -708,7 +708,7 @@ export const VisualQAArena: React.FC = () => {
             border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-lg)',
             overflow: 'hidden',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--bg-surface)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -815,7 +815,7 @@ export const VisualQAArena: React.FC = () => {
                           padding: '6px',
                           borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--border-subtle)',
-                          backgroundColor: '#ffffff',
+                          backgroundColor: 'var(--bg-surface)',
                           color: 'var(--primary-700)',
                           cursor: 'pointer',
                           display: 'flex',
