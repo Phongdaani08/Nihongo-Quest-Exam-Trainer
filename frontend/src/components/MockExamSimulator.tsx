@@ -69,6 +69,18 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
   const [editingPreset, setEditingPreset] = useState<CustomPracticePreset | null>(null);
   const [hoveredVocabPresetId, setHoveredVocabPresetId] = useState<string | null>(null);
   const [hoveredSec3PresetId, setHoveredSec3PresetId] = useState<string | null>(null);
+  const [sec3PatternFilter, setSec3PatternFilter] = useState<number>(0);
+
+  const handleFilterSec3Pattern = (typeId: number) => {
+    setSec3PatternFilter(typeId);
+    const filtered = (typeId === 0 ? allSection3Pool : allSection3Pool.filter((q) => q.typeId === typeId)).sort(
+      () => 0.5 - Math.random()
+    );
+    setSec3Items(filtered);
+    setSec3CurrentIndex(0);
+    setSec3Feedback(null);
+    setIsChoiceRevealed(false);
+  };
 
   useEffect(() => {
     localStorage.setItem('nihongo_endless_choice_mode', choiceRevealMode);
@@ -298,8 +310,15 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
     setIsChoiceRevealed(false);
     if (examMode === 'endless_infinite') {
       const nextIdx = (sec3CurrentIndex + 1) % sec3Items.length;
+      if (nextIdx === 0) {
+        // Re-shuffle for endless variety
+        const reshuffled = [...sec3Items].sort(() => 0.5 - Math.random());
+        setSec3Items(reshuffled);
+      }
       setSec3CurrentIndex(nextIdx);
-      playJapaneseAudio(sec3Items[nextIdx].teacherQuestionKana);
+      if (sec3Items[nextIdx]) {
+        playJapaneseAudio(sec3Items[nextIdx].teacherQuestionKana);
+      }
     } else {
       if (sec3CurrentIndex < 4) {
         setSec3CurrentIndex((prev) => prev + 1);
@@ -1392,13 +1411,85 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
 
           {/* SECTION 3: PURE VISUAL Q&A ARENA */}
           {currentSection === 3 && sec3Items[sec3CurrentIndex] && (
-            <div className="card" style={{ padding: '28px', backgroundColor: 'var(--bg-surface)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                <span className="badge badge-primary">{sec3Items[sec3CurrentIndex].typeName}</span>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  ข้อที่ {sec3CurrentIndex + 1} {examMode === 'timed_3min' ? '/ 5' : '(วนต่อเนื่อง)'}
-                </span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* ENDLESS MODE: 5-PATTERN QUESTION SELECTOR */}
+              {examMode === 'endless_infinite' && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '8px',
+                }}>
+                  {[
+                    { id: 0, title: '🔀 รวม 5 แบบ', romaji: 'All Patterns', desc: 'สุ่มทุกหมวด' },
+                    { id: 1, title: 'แบบที่ 1: ถามสิ่งของ', romaji: '"Kore wa nan desuka?"', desc: 'สิ่งของ & Katakana' },
+                    { id: 2, title: 'แบบที่ 2: ถาม 4 ประเทศ', romaji: '"Anohito wa doko kara kimashitaka?"', desc: 'ไทย 🇹🇭, ญี่ปุ่น 🇯🇵, อเมริกา 🇺🇸, จีน 🇨🇳' },
+                    { id: 3, title: 'แบบที่ 3: ถามอาชีพ/บุคคล', romaji: '"Anohito wa dare desuka?"', desc: 'ถามบุคคล & อาชีพ' },
+                    { id: 4, title: 'แบบที่ 4: ถามนิตยสาร', romaji: '"Kore wa nan no zasshi desuka?"', desc: 'นิตยสาร 5 หมวด' },
+                    { id: 5, title: 'แบบที่ 5: ถามสถานที่', romaji: '"Kochira wa nan desuka?"', desc: 'สถานที่ & องค์กร' },
+                  ].map((p) => {
+                    const isSelected = sec3PatternFilter === p.id;
+                    const count = p.id === 0 ? allSection3Pool.length : allSection3Pool.filter((q) => q.typeId === p.id).length;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleFilterSec3Pattern(p.id)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: 'var(--radius-md)',
+                          border: isSelected ? '2px solid var(--primary-600)' : '1px solid var(--border-subtle)',
+                          backgroundColor: isSelected ? 'var(--primary-50)' : 'var(--bg-surface)',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          boxShadow: isSelected ? '0 0 0 1px var(--primary-600), 0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{
+                            fontSize: '12.5px',
+                            fontWeight: 800,
+                            color: isSelected ? 'var(--primary-700)' : 'var(--text-main)',
+                          }}>
+                            {p.title}
+                          </span>
+                          <span style={{
+                            fontSize: '10.5px',
+                            padding: '1px 6px',
+                            borderRadius: '999px',
+                            backgroundColor: isSelected ? 'var(--primary-600)' : 'var(--bg-subtle)',
+                            color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                            fontWeight: 700,
+                          }}>
+                            {count} ข้อ
+                          </span>
+                        </div>
+                        <div style={{
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          color: isSelected ? 'var(--primary-600)' : 'var(--text-main)',
+                          fontFamily: 'monospace, sans-serif',
+                        }}>
+                          {p.romaji}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {p.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="card" style={{ padding: '28px', backgroundColor: 'var(--bg-surface)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                  <span className="badge badge-primary">{sec3Items[sec3CurrentIndex].typeName}</span>
+                  <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                    ข้อที่ {sec3CurrentIndex + 1} {examMode === 'timed_3min' ? '/ 5' : `(${sec3Items.length} ข้อวนต่อเนื่อง)`}
+                  </span>
+                </div>
 
               {/* ERROR BANNER FOR SECTION 3 */}
               {sec3Feedback && !sec3Feedback.isCorrect && (
@@ -1619,6 +1710,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                   )}
                 </div>
               </div>
+            </div>
             </div>
           )}
         </div>
