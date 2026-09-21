@@ -786,7 +786,7 @@ export const allSection3Pool: VisualQuestionItem[] = [
     teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
     teacherQuestionKana: 'あのひと は どこ から きましたか？',
     teacherQuestionTh: 'คนนั้นมาจากประเทศไหนครับ?',
-    imageSrc: '/assets/images/clean/flag_usa.png',
+    imageSrc: '/assets/images/clean/flag_usa.svg',
     imageTitle: 'ประเทศสหรัฐอเมริกา (Amerika)',
     correctAnswerRomaji: 'Anohito wa Amerika kara kimashita.',
     correctAnswerKana: 'あのひとはアメリカからきました。',
@@ -807,7 +807,7 @@ export const allSection3Pool: VisualQuestionItem[] = [
     teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
     teacherQuestionKana: 'あのひと は どこ から きましたか？',
     teacherQuestionTh: 'คนนั้นมาจากประเทศไหนครับ?',
-    imageSrc: '/assets/images/clean/flag_china.png',
+    imageSrc: '/assets/images/clean/flag_china.svg',
     imageTitle: 'ประเทศจีน (Chūgoku)',
     correctAnswerRomaji: 'Anohito wa Chūgoku kara kimashita.',
     correctAnswerKana: 'あのひとはちゅうごくからきました。',
@@ -828,7 +828,7 @@ export const allSection3Pool: VisualQuestionItem[] = [
     teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
     teacherQuestionKana: 'あのひと は どこ から きましたか？',
     teacherQuestionTh: 'คนนั้นมาจากประเทศไหนครับ?',
-    imageSrc: '/assets/images/clean/flag_japan.png',
+    imageSrc: '/assets/images/clean/flag_japan.svg',
     imageTitle: 'ประเทศญี่ปุ่น (Nihon)',
     correctAnswerRomaji: 'Anohito wa Nihon kara kimashita.',
     correctAnswerKana: 'あのひとはにほんからきました。',
@@ -849,7 +849,7 @@ export const allSection3Pool: VisualQuestionItem[] = [
     teacherQuestionRomaji: 'Anohito wa doko kara kimashitaka?',
     teacherQuestionKana: 'あのひと は どこ から きましたか？',
     teacherQuestionTh: 'คนนั้นมาจากประเทศไหนครับ?',
-    imageSrc: '/assets/images/clean/flag_thailand.jpg',
+    imageSrc: '/assets/images/clean/flag_thailand.svg',
     imageTitle: 'ประเทศไทย (Tai)',
     correctAnswerRomaji: 'Anohito wa Tai kara kimashita.',
     correctAnswerKana: 'あのひとはタイからきました。',
@@ -1375,9 +1375,54 @@ export const allSection3Pool: VisualQuestionItem[] = [
   },
 ];
 
+const visualQuestionTypes = [
+  {
+    id: 0,
+    title: '🔀 สุ่มรวม 5 รูปแบบ',
+    romaji: 'All 5 Patterns (สุ่มผสมทุกแบบ)',
+    desc: 'สุ่มโจทย์ภาพทั้งหมดทุกหมวด',
+    badge: 'สุ่มทุกข้อ',
+  },
+  {
+    id: 1,
+    title: 'แบบที่ 1: ถามสิ่งของ',
+    romaji: '"Kore wa nan desuka?"',
+    desc: 'สิ่งของรอบตัว & อักษร Katakana',
+    badge: 'Kore wa [สิ่งของ] desu.',
+  },
+  {
+    id: 2,
+    title: 'แบบที่ 2: ถาม 4 ประเทศ',
+    romaji: '"Anohito wa doko kara kimashitaka?"',
+    desc: 'ไทย 🇹🇭, ญี่ปุ่น 🇯🇵, อเมริกา 🇺🇸, จีน 🇨🇳',
+    badge: 'Anohito wa [ประเทศ] kara kimashita.',
+  },
+  {
+    id: 3,
+    title: 'แบบที่ 3: ถามอาชีพ / บุคคล',
+    romaji: '"Anohito wa dare desuka?"',
+    desc: 'ถามอาชีพและบุคคลในบทเรียน',
+    badge: 'Anohito wa [อาชีพ] desu.',
+  },
+  {
+    id: 4,
+    title: 'แบบที่ 4: ถามนิตยสาร',
+    romaji: '"Kore wa nan no zasshi desuka?"',
+    desc: 'นิตยสารรถยนต์, ญี่ปุ่น, อังกฤษ, กล้อง, คอมพิวเตอร์',
+    badge: 'Kore wa [หัวข้อ] no zasshi desu.',
+  },
+  {
+    id: 5,
+    title: 'แบบที่ 5: ถามสถานที่',
+    romaji: '"Kochira wa nan desuka?"',
+    desc: 'สถานที่, สถาบัน, องค์กร และบทสนทนา',
+    badge: 'Kochira wa [สถานที่] desu.',
+  },
+];
+
 export const VisualQAArena: React.FC = () => {
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<number | 0>(0); // 0 = all
-  const [pool, setPool] = useState<VisualQuestionItem[]>(allSection3Pool);
+  const [pool, setPool] = useState<VisualQuestionItem[]>(() => [...allSection3Pool].sort(() => 0.5 - Math.random()));
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showAnswer, setShowAnswer] = useState<boolean>(false);
@@ -1395,7 +1440,7 @@ export const VisualQAArena: React.FC = () => {
 
   const handleFilterType = (typeId: number) => {
     setSelectedTypeFilter(typeId);
-    const filtered = typeId === 0 ? allSection3Pool : allSection3Pool.filter(q => q.typeId === typeId);
+    const filtered = (typeId === 0 ? allSection3Pool : allSection3Pool.filter(q => q.typeId === typeId)).sort(() => 0.5 - Math.random());
     setPool(filtered);
     setCurrentIndex(0);
     setSelectedOption(null);
@@ -1433,7 +1478,13 @@ export const VisualQAArena: React.FC = () => {
   };
 
   const handleNext = () => {
-    setCurrentIndex((currentIndex + 1) % pool.length);
+    const nextIndex = (currentIndex + 1) % pool.length;
+    if (nextIndex === 0) {
+      // Re-shuffle on loop completion for endless fresh practice
+      const reshuffled = [...pool].sort(() => 0.5 - Math.random());
+      setPool(reshuffled);
+    }
+    setCurrentIndex(nextIndex);
     setSelectedOption(null);
     setShowAnswer(false);
     setIsChoiceRevealed(false);
@@ -1450,7 +1501,7 @@ export const VisualQAArena: React.FC = () => {
           </div>
           <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Visual Q&A Arena (ถาม-ตอบตรงภาพ 5 รูปแบบ)</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '2px' }}>
-            ฝึกตอบคำถามตาม 5 แพทเทิร์นของอาจารย์ พร้อมระบบแจ้งเตือนข้อผิดพลาดและเสียงเฉลย
+            เลือกรูปแบบคำถามที่ต้องการฝึกซ้อม ระบบจะวนสุ่มภาพและคำตอบในรูปแบบนั้นอย่างต่อเนื่อง
           </p>
         </div>
 
@@ -1481,38 +1532,77 @@ export const VisualQAArena: React.FC = () => {
             <strong>{stats.correct} / {stats.total}</strong>
           </div>
           <button onClick={handleShuffle} className="btn-secondary" style={{ padding: '8px 14px', fontSize: '13px' }}>
-            <Shuffle size={14} /> สุ่มโจทย์ใหม่
+            <Shuffle size={14} /> สุ่มใหม่
           </button>
         </div>
       </div>
 
-      {/* 5-Type Filter Toolbar */}
-      <div className="category-filter-grid">
-        {[
-          { id: 0, label: 'ทั้งหมด (รวม 5 แบบ)' },
-          { id: 1, label: '1. สิ่งของ (Kore wa nan...)' },
-          { id: 2, label: '2. 4 ประเทศ (Anohito wa doko...)' },
-          { id: 3, label: '3. อาชีพ (Anohito wa dare...)' },
-          { id: 4, label: '4. นิตยสาร (Nan no zasshi...)' },
-          { id: 5, label: '5. สถานที่ (Kochira wa nan...)' },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => handleFilterType(t.id)}
-            style={{
-              padding: '10px 8px',
-              borderRadius: 'var(--radius-md)',
-              border: selectedTypeFilter === t.id ? '2px solid var(--primary-600)' : '1px solid var(--border-subtle)',
-              backgroundColor: selectedTypeFilter === t.id ? 'var(--primary-50)' : 'var(--bg-surface)',
-              fontWeight: selectedTypeFilter === t.id ? 700 : 500,
-              fontSize: '12px',
-              textAlign: 'center',
-              color: selectedTypeFilter === t.id ? 'var(--primary-700)' : 'var(--text-main)',
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Modern 5-Pattern Question Selector Grid */}
+      <div>
+        <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          🎯 เลือกแพทเทิร์นคำถามเพื่อฝึกเจาะจง (Locked Question Practice):
+        </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '10px',
+        }}>
+          {visualQuestionTypes.map((t) => {
+            const isSelected = selectedTypeFilter === t.id;
+            const qCount = t.id === 0 ? allSection3Pool.length : allSection3Pool.filter(q => q.typeId === t.id).length;
+            return (
+              <button
+                key={t.id}
+                onClick={() => handleFilterType(t.id)}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  border: isSelected ? '2px solid var(--primary-600)' : '1px solid var(--border-subtle)',
+                  backgroundColor: isSelected ? 'var(--primary-50)' : 'var(--bg-surface)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  boxShadow: isSelected ? '0 0 0 1px var(--primary-600), 0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    color: isSelected ? 'var(--primary-700)' : 'var(--text-main)',
+                  }}>
+                    {t.title}
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    padding: '2px 7px',
+                    borderRadius: '999px',
+                    backgroundColor: isSelected ? 'var(--primary-600)' : 'var(--bg-subtle)',
+                    color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                    fontWeight: 700,
+                  }}>
+                    {qCount} ข้อ
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  color: isSelected ? 'var(--primary-600)' : 'var(--text-main)',
+                  fontFamily: 'monospace, sans-serif',
+                }}>
+                  {t.romaji}
+                </div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                  {t.desc}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Main Question Display Arena */}

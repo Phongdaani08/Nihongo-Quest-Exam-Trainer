@@ -161,17 +161,35 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
       return { item: v, options: opts };
     });
 
-    // Section 3: Pick from active preset's granular question items (if in Endless Mode)
-    const activeSec3QuestionIds =
-      mode === 'endless_infinite' && activePreset.sec3QuestionIds && activePreset.sec3QuestionIds.length > 0
-        ? activePreset.sec3QuestionIds
-        : allSection3Pool
-            .filter((q) => (activePreset.sec3TypeIds || [1, 2, 3, 4, 5]).includes(q.typeId))
-            .map((q) => q.id);
+    // Section 3: In Timed Mode (3-minute exam), strictly guarantee 1 question from each of the 5 Types in sequence!
+    let shuffledSec3: VisualQuestionItem[] = [];
+    if (mode === 'timed_3min') {
+      const type1Pool = allSection3Pool.filter((q) => q.typeId === 1);
+      const type2Pool = allSection3Pool.filter((q) => q.typeId === 2);
+      const type3Pool = allSection3Pool.filter((q) => q.typeId === 3);
+      const type4Pool = allSection3Pool.filter((q) => q.typeId === 4);
+      const type5Pool = allSection3Pool.filter((q) => q.typeId === 5);
 
-    const sec3PoolFiltered = allSection3Pool.filter((q) => activeSec3QuestionIds.includes(q.id));
-    const activeSec3Pool = sec3PoolFiltered.length > 0 ? sec3PoolFiltered : allSection3Pool;
-    const shuffledSec3: VisualQuestionItem[] = [...activeSec3Pool].sort(() => 0.5 - Math.random());
+      const q1 = type1Pool[Math.floor(Math.random() * type1Pool.length)] || allSection3Pool[0];
+      const q2 = type2Pool[Math.floor(Math.random() * type2Pool.length)] || allSection3Pool[1];
+      const q3 = type3Pool[Math.floor(Math.random() * type3Pool.length)] || allSection3Pool[2];
+      const q4 = type4Pool[Math.floor(Math.random() * type4Pool.length)] || allSection3Pool[3];
+      const q5 = type5Pool[Math.floor(Math.random() * type5Pool.length)] || allSection3Pool[4];
+
+      shuffledSec3 = [q1, q2, q3, q4, q5];
+    } else {
+      // Endless mode or custom presets
+      const activeSec3QuestionIds =
+        activePreset.sec3QuestionIds && activePreset.sec3QuestionIds.length > 0
+          ? activePreset.sec3QuestionIds
+          : allSection3Pool
+              .filter((q) => (activePreset.sec3TypeIds || [1, 2, 3, 4, 5]).includes(q.typeId))
+              .map((q) => q.id);
+
+      const sec3PoolFiltered = allSection3Pool.filter((q) => activeSec3QuestionIds.includes(q.id));
+      const activeSec3Pool = sec3PoolFiltered.length > 0 ? sec3PoolFiltered : allSection3Pool;
+      shuffledSec3 = [...activeSec3Pool].sort(() => 0.5 - Math.random());
+    }
 
     setSec2Items(picked5Vocab);
     setSec2CurrentIndex(0);
