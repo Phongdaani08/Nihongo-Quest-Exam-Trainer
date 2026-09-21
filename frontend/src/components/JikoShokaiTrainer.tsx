@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Volume2, CheckCircle2, RotateCcw, Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
 import { playJapaneseAudio } from '../utils/speech';
 
@@ -17,6 +17,7 @@ interface JikoLineConfig {
 export const JikoShokaiTrainer: React.FC = () => {
   const [selectedHobby, setSelectedHobby] = useState<'manga' | 'dokusho' | 'eiga'>('manga');
   const [activeStep, setActiveStep] = useState<number>(1);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [assembledTokens, setAssembledTokens] = useState<Record<number, string[]>>({
     1: [],
     2: [],
@@ -120,10 +121,25 @@ export const JikoShokaiTrainer: React.FC = () => {
     },
   ];
 
+  // Scrambled bank helper to ensure tokens are randomly mixed
+  const [scrambledBank, setScrambledBank] = useState<Record<number, { id: string; text: string; correctIndex: number }[]>>(() => {
+    const initial: Record<number, { id: string; text: string; correctIndex: number }[]> = {};
+    lines.forEach((l) => {
+      let mixed = [...l.tokens].sort(() => 0.5 - Math.random());
+      if (mixed.map(t => t.text).join(' ') === l.tokens.map(t => t.text).join(' ') && l.tokens.length > 1) {
+        mixed = [...mixed].reverse();
+      }
+      initial[l.step] = mixed;
+    });
+    return initial;
+  });
+
   const currentLine = lines.find(l => l.step === activeStep)!;
   const currentAssembled = assembledTokens[activeStep] || [];
+  const currentScrambled = scrambledBank[activeStep] || currentLine.tokens;
 
   const handleAddToken = (tokenText: string) => {
+    if (currentAssembled.includes(tokenText)) return;
     const updated = [...currentAssembled, tokenText];
     setAssembledTokens({ ...assembledTokens, [activeStep]: updated });
     setStepStatus({ ...stepStatus, [activeStep]: 'idle' });
@@ -154,7 +170,23 @@ export const JikoShokaiTrainer: React.FC = () => {
   const handleResetStep = () => {
     setAssembledTokens({ ...assembledTokens, [activeStep]: [] });
     setStepStatus({ ...stepStatus, [activeStep]: 'idle' });
+    let mixed = [...currentLine.tokens].sort(() => 0.5 - Math.random());
+    if (mixed.map(t => t.text).join(' ') === currentLine.tokens.map(t => t.text).join(' ') && currentLine.tokens.length > 1) {
+      mixed = [...mixed].reverse();
+    }
+    setScrambledBank(prev => ({ ...prev, [activeStep]: mixed }));
   };
+
+  useEffect(() => {
+    const step4Line = lines.find(l => l.step === 4);
+    if (step4Line) {
+      let mixed = [...step4Line.tokens].sort(() => 0.5 - Math.random());
+      if (mixed.map(t => t.text).join(' ') === step4Line.tokens.map(t => t.text).join(' ') && step4Line.tokens.length > 1) {
+        mixed = [...mixed].reverse();
+      }
+      setScrambledBank(prev => ({ ...prev, 4: mixed }));
+    }
+  }, [selectedHobby]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -304,50 +336,70 @@ export const JikoShokaiTrainer: React.FC = () => {
         )}
 
         {/* Assembled Sentence Box (Drop Zone) */}
-        <div style={{
-          minHeight: '80px',
-          padding: '18px',
-          border: stepStatus[activeStep] === 'correct'
-            ? '2px solid var(--success-border)'
-            : stepStatus[activeStep] === 'wrong'
-            ? '2px solid var(--danger-border)'
-            : '2px dashed var(--border-strong)',
-          borderRadius: 'var(--radius-lg)',
-          backgroundColor: stepStatus[activeStep] === 'correct'
-            ? 'var(--success-50)'
-            : stepStatus[activeStep] === 'wrong'
-            ? 'var(--danger-50)'
-            : 'var(--bg-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          flexWrap: 'wrap',
-          marginBottom: '24px'
-        }}>
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragOver(true);
+          }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragOver(false);
+            const tokenText = e.dataTransfer.getData('text/plain');
+            if (tokenText) handleAddToken(tokenText);
+          }}
+          style={{
+            minHeight: '84px',
+            padding: '18px',
+            border: stepStatus[activeStep] === 'correct'
+              ? '2px solid var(--success-border)'
+              : stepStatus[activeStep] === 'wrong'
+              ? '2px solid var(--danger-border)'
+              : isDragOver
+              ? '2px solid var(--primary-600)'
+              : '2px dashed var(--border-strong)',
+            borderRadius: 'var(--radius-lg)',
+            backgroundColor: stepStatus[activeStep] === 'correct'
+              ? 'var(--success-50)'
+              : stepStatus[activeStep] === 'wrong'
+              ? 'var(--danger-50)'
+              : isDragOver
+              ? 'var(--primary-50)'
+              : 'var(--bg-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+            marginBottom: '24px',
+            transition: 'all 0.15s ease',
+          }}
+        >
           {currentAssembled.length === 0 ? (
             <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-              คลิกบล็อกคำศัพท์ด้านล่างเพื่อจัดเรียงลำดับประโยคให้ถูกต้อง...
+              🖱️ ลากบล็อกคำศัพท์มาวางที่นี่ หรือ คลิกบล็อกด้านล่างเพื่อจัดเรียงลำดับ...
             </span>
           ) : (
             currentAssembled.map((token, idx) => (
               <button
                 key={idx}
+                type="button"
                 onClick={() => handleRemoveToken(idx)}
                 style={{
                   padding: '8px 14px',
                   backgroundColor: 'var(--bg-surface)',
-                  border: '1px solid var(--border-strong)',
+                  border: '1.5px solid var(--primary-500)',
                   borderRadius: 'var(--radius-md)',
                   fontWeight: 700,
                   fontSize: '15px',
                   boxShadow: 'var(--shadow-sm)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  cursor: 'pointer',
                 }}
                 title="คลิกเพื่อนำออก"
               >
-                {token} <span style={{ color: 'var(--text-faint)', fontSize: '12px' }}>×</span>
+                {token} <span style={{ color: 'var(--danger-600)', fontSize: '13px', fontWeight: 800 }}>×</span>
               </button>
             ))
           )}
@@ -356,27 +408,32 @@ export const JikoShokaiTrainer: React.FC = () => {
         {/* Word Token Bank (Scrambled) */}
         <div style={{ marginBottom: '28px' }}>
           <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px' }}>
-            บล็อกคำศัพท์ (คลิกเพื่อเลือกเรียง):
+            บล็อกคำศัพท์สุ่มลำดับ (คลิกหรือลากขึ้นไปวาง):
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {currentLine.tokens.map((token) => {
-              const countInAssembled = currentAssembled.filter(t => t === token.text).length;
-              const isUsed = countInAssembled > 0;
+            {currentScrambled.map((token) => {
+              const isUsed = currentAssembled.includes(token.text);
               return (
                 <button
                   key={token.id}
+                  type="button"
+                  draggable={!isUsed && stepStatus[activeStep] !== 'correct'}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', token.text);
+                  }}
                   onClick={() => handleAddToken(token.text)}
                   disabled={isUsed || stepStatus[activeStep] === 'correct'}
                   style={{
                     padding: '10px 18px',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-strong)',
+                    border: isUsed ? '1px dashed var(--border-subtle)' : '1.5px solid var(--border-strong)',
                     backgroundColor: isUsed ? 'var(--bg-subtle)' : 'var(--bg-surface)',
                     color: isUsed ? 'var(--text-faint)' : 'var(--text-main)',
                     fontWeight: 700,
                     fontSize: '15px',
-                    cursor: isUsed ? 'default' : 'pointer',
-                    boxShadow: isUsed ? 'none' : 'var(--shadow-sm)'
+                    cursor: isUsed ? 'default' : 'grab',
+                    boxShadow: isUsed ? 'none' : '0 2px 5px rgba(0,0,0,0.05)',
+                    transition: 'all 0.15s ease',
                   }}
                 >
                   {token.text}
@@ -402,7 +459,7 @@ export const JikoShokaiTrainer: React.FC = () => {
               className="btn-outline"
               style={{ padding: '10px 16px' }}
             >
-              <RotateCcw size={15} /> ล้างคำตอบ
+              <RotateCcw size={15} /> สลับสุ่มใหม่ & ล้าง
             </button>
           </div>
 

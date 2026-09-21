@@ -21,6 +21,25 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
   const [sec1Assembled, setSec1Assembled] = useState<Record<number, string[]>>({ 1: [], 2: [], 3: [], 4: [], 5: [] });
   const [sec1Done, setSec1Done] = useState<Record<number, boolean>>({ 1: false, 2: false, 3: false, 4: false, 5: false });
   const [sec1WrongAttempt, setSec1WrongAttempt] = useState<boolean>(false);
+  const [sec1IsDragOver, setSec1IsDragOver] = useState<boolean>(false);
+
+  const scrambleTokens = (tokens: string[]) => {
+    let scrambled = [...tokens].sort(() => 0.5 - Math.random());
+    if (scrambled.join(' ') === tokens.join(' ') && tokens.length > 1) {
+      scrambled.reverse();
+    }
+    return scrambled;
+  };
+
+  const generateAllSec1Scrambled = (hobby: string) => ({
+    1: scrambleTokens(['Hajime', 'mashite']),
+    2: scrambleTokens(['Watashi', 'wa', 'Poom', 'desu']),
+    3: scrambleTokens(['Panyapiwatto', 'keiei daigaku', 'no', 'gakusei', 'desu']),
+    4: scrambleTokens(['Shumi', 'wa', hobby, 'desu']),
+    5: scrambleTokens(['Dōzo', 'yoroshiku', 'onegai', 'itashimasu']),
+  });
+
+  const [sec1ScrambledTokens, setSec1ScrambledTokens] = useState<Record<number, string[]>>(() => generateAllSec1Scrambled('manga'));
 
   // Section 2 State (Flash Vocab)
   const [sec2Items, setSec2Items] = useState<any[]>([]);
@@ -215,6 +234,8 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
     setSec1Done({ 1: false, 2: false, 3: false, 4: false, 5: false });
     setSec1WrongAttempt(false);
     setSec1Step(1);
+    setSec1ScrambledTokens(generateAllSec1Scrambled(selectedHobby));
+    setSec1IsDragOver(false);
     setTimeLeftSeconds(180);
     setCurrentSection(1);
     setIsChoiceRevealed(false);
@@ -224,6 +245,7 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
   // Section 1 Token Add/Remove
   const handleAddTokenSec1 = (token: string) => {
     const current = sec1Assembled[sec1Step] || [];
+    if (current.includes(token)) return; // Prevent duplicates
     const updated = [...current, token];
     setSec1Assembled({ ...sec1Assembled, [sec1Step]: updated });
     setSec1WrongAttempt(false);
@@ -1113,22 +1135,48 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                 ))}
               </div>
 
-              {/* Word Assembly Drop Area */}
-              <div style={{
-                padding: '16px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: sec1Done[sec1Step] ? 'var(--success-50)' : 'var(--bg-subtle)',
-                border: sec1Done[sec1Step] ? '2px solid var(--success-border)' : '2px dashed var(--border-strong)',
-                minHeight: '70px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                flexWrap: 'wrap',
-                marginBottom: '20px'
-              }}>
+              {/* Word Assembly Drop Area (Drag and Drop Target + Click Remove) */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (!sec1Done[sec1Step]) setSec1IsDragOver(true);
+                }}
+                onDragLeave={() => setSec1IsDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setSec1IsDragOver(false);
+                  if (sec1Done[sec1Step]) return;
+                  const token = e.dataTransfer.getData('text/plain');
+                  if (token && !(sec1Assembled[sec1Step] || []).includes(token)) {
+                    handleAddTokenSec1(token);
+                  }
+                }}
+                style={{
+                  padding: '16px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: sec1Done[sec1Step]
+                    ? 'var(--success-50)'
+                    : sec1IsDragOver
+                    ? 'var(--primary-50)'
+                    : 'var(--bg-subtle)',
+                  border: sec1Done[sec1Step]
+                    ? '2px solid var(--success-border)'
+                    : sec1IsDragOver
+                    ? '2px dashed var(--primary-600)'
+                    : '2px dashed var(--border-strong)',
+                  minHeight: '70px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  marginBottom: '20px',
+                  transition: 'all 0.2s ease',
+                }}
+              >
                 {(sec1Assembled[sec1Step] || []).length === 0 ? (
                   <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                    คลิกบล็อกคำศัพท์ด้านล่างเพื่อต่อประโยค...
+                    ลากคำศัพท์มาวางที่นี่ หรือคลิกบล็อกคำด้านล่าง...
                   </span>
                 ) : (
                   sec1Assembled[sec1Step].map((tok, i) => (
@@ -1142,7 +1190,9 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                         borderRadius: 'var(--radius-md)',
                         fontWeight: 700,
                         fontSize: '14px',
+                        cursor: 'pointer',
                       }}
+                      title="คลิกเพื่อนำคำนี้ออก"
                     >
                       {tok} ×
                     </button>
@@ -1150,23 +1200,30 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
                 )}
               </div>
 
-              {/* Word Tokens Scrambled */}
+              {/* Word Tokens Scrambled & Draggable */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
-                {sec1TokensConfig[sec1Step].tokens.map((tok, idx) => {
+                {(sec1ScrambledTokens[sec1Step] || sec1TokensConfig[sec1Step].tokens).map((tok, idx) => {
                   const isUsed = (sec1Assembled[sec1Step] || []).includes(tok);
                   return (
                     <button
                       key={idx}
+                      draggable={!isUsed && !sec1Done[sec1Step]}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', tok);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
                       onClick={() => handleAddTokenSec1(tok)}
                       disabled={isUsed || sec1Done[sec1Step]}
                       style={{
                         padding: '8px 16px',
                         borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--border-strong)',
+                        border: isUsed ? '1px solid var(--border-subtle)' : '1px solid var(--border-strong)',
                         backgroundColor: isUsed ? 'var(--bg-subtle)' : 'var(--bg-surface)',
                         color: isUsed ? 'var(--text-faint)' : 'var(--text-main)',
                         fontWeight: 700,
                         fontSize: '14px',
+                        cursor: isUsed || sec1Done[sec1Step] ? 'default' : 'grab',
+                        transition: 'transform 0.1s ease',
                       }}
                     >
                       {tok}
