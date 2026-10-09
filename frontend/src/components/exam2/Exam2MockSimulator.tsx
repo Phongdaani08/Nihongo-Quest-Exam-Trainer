@@ -117,10 +117,13 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
 
   // Auto-play Thai Audio when Section 1 Thai prompt appears
   useEffect(() => {
-    if (examState === 'running' && currentSection === 1 && sec1Items[sec1Index]) {
-      playThaiAudio(sec1Items[sec1Index].item.meaning_th);
+    if (examState === 'running' && currentSection === 1 && sec1Items[sec1Index] && !sec1Feedback) {
+      const timer = setTimeout(() => {
+        playThaiAudio(sec1Items[sec1Index].item.meaning_th);
+      }, 200);
+      return () => clearTimeout(timer);
     }
-  }, [examState, currentSection, sec1Index, sec1Items]);
+  }, [examState, currentSection, sec1Index, sec1Items, sec1Feedback]);
 
   // Handlers for Preset Management
   const handleOpenCreatePreset = () => {
@@ -313,7 +316,7 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
           }
         }
       }
-    }, 450);
+    }, 1300);
   };
 
   const handleAnswerSec2 = (optionIndex: number) => {
@@ -385,7 +388,7 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
           handleFinishExam();
         }
       }
-    }, 450);
+    }, 1700);
   };
 
   const handleFinishExam = () => {
