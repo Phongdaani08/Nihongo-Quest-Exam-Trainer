@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Sidebar, TabType } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
+
+// Exam 1 Components
 import { OverviewPortal } from './components/OverviewPortal';
 import { JikoShokaiTrainer } from './components/JikoShokaiTrainer';
 import { SpeedVocabTrainer } from './components/SpeedVocabTrainer';
@@ -8,13 +10,23 @@ import { VisualQAArena } from './components/VisualQAArena';
 import { MockExamSimulator } from './components/MockExamSimulator';
 import { VocabVault } from './components/VocabVault';
 
+// Exam 2 Components
+import { Exam2Dashboard } from './components/exam2/Exam2Dashboard';
+import { Exam2VocabVault } from './components/exam2/Exam2VocabVault';
+import { Exam2Part1VocabTrainer } from './components/exam2/Exam2Part1VocabTrainer';
+import { Exam2MockSimulator } from './components/exam2/Exam2MockSimulator';
+import { LocationNavigator } from './components/exam2/LocationNavigator';
+import { ChronoClockMaster } from './components/exam2/ChronoClockMaster';
+import { PhoneKeypadTrainer } from './components/exam2/PhoneKeypadTrainer';
+import { CashierPriceQuest } from './components/exam2/CashierPriceQuest';
+import { TimeBlockIntervalTrainer } from './components/exam2/TimeBlockIntervalTrainer';
+
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('exam2_dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState<boolean>(false);
 
   const handleToggleSidebar = () => {
-    // Check if on mobile/tablet (<= 1024px) or desktop
     if (typeof window !== 'undefined' && window.innerWidth <= 1024) {
       setIsMobileSidebarOpen((prev) => !prev);
     } else {
@@ -45,6 +57,19 @@ export const App: React.FC = () => {
         {/* Scrollable Content Container */}
         <main className="main-content-padding" style={{ flex: 1, overflowY: 'auto', padding: '24px 32px 60px' }}>
           <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            {/* Exam 2 Tabs */}
+            {activeTab === 'exam2_dashboard' && <Exam2Dashboard onNavigate={setActiveTab} />}
+            {activeTab === 'exam2_vocab_vault' && <Exam2VocabVault />}
+            {activeTab === 'exam2_part1_vocab' && <Exam2Part1VocabTrainer />}
+            {activeTab === 'exam2_mock' && <Exam2MockSimulator initialMode="timed_3min" key="e2_timed" />}
+            {activeTab === 'exam2_endless' && <Exam2MockSimulator initialMode="endless_infinite" key="e2_endless" />}
+            {activeTab === 'exam2_p1_location' && <LocationNavigator />}
+            {activeTab === 'exam2_p2_clock' && <ChronoClockMaster />}
+            {activeTab === 'exam2_p3_phone' && <PhoneKeypadTrainer />}
+            {activeTab === 'exam2_p4_price' && <CashierPriceQuest />}
+            {activeTab === 'exam2_p5_schedule' && <TimeBlockIntervalTrainer />}
+
+            {/* Exam 1 Tabs */}
             {activeTab === 'overview' && <OverviewPortal onNavigate={setActiveTab} />}
             {activeTab === 'mock_exam' && <MockExamSimulator initialMode="timed_3min" key="timed" />}
             {activeTab === 'endless_practice' && <MockExamSimulator initialMode="endless_infinite" key="endless" />}
@@ -69,7 +94,7 @@ export const App: React.FC = () => {
               <strong>Nihongo Quest Exam Trainer</strong> — พัฒนาขึ้นสำหรับการสอบวิชา JN60101 ภาษาญี่ปุ่นเพื่อการสื่อสาร 1 (PIM)
             </p>
             <p style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>
-              แหล่งอ้างอิง: เอกสารประกอบการสอน บทที่ 1 และ บทที่ 2 โดย อาจารย์ ดร.เอกนรินทร์ จิรชีวีวงศ์
+              ครอบคลุมเนื้อหาบทที่ 1, 2, 3, และ 4 โดย อาจารย์ ดร.เอกนรินทร์ จิรชีวีวงศ์
             </p>
           </footer>
         </main>

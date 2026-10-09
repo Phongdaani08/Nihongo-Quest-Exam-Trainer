@@ -1,4 +1,5 @@
 import { Vocabulary, ExamQuestion, ExamSession } from '../types';
+import { exam2VocabList } from './exam2Data';
 
 const API_BASE = '/api';
 
@@ -176,6 +177,7 @@ export const fallbackVocabs: Vocabulary[] = [
   { id: 'c2_71', chapter_number: 2, category: 'number', word_romaji: 'kyū / ku', word_kana: 'きゅう / く', word_kanji: '九', meaning_th: '9 (เก้า)', example_jp: 'Kyū', example_th: 'เก้า', textbook_ref: 'JN60101 Ch.2 p.58' },
   { id: 'c2_72', chapter_number: 2, category: 'number', word_romaji: 'jū', word_kana: 'じゅう', word_kanji: '十', meaning_th: '10 (สิบ)', example_jp: 'Jū', example_th: 'สิบ', textbook_ref: 'JN60101 Ch.2 p.58' },
   { id: 'c2_73', chapter_number: 2, category: 'symbol', word_romaji: 'no (เครื่องหมาย -)', word_kana: 'の', word_kanji: '-', meaning_th: '- (ขีดคั่นเบอร์โทรศัพท์)', example_jp: '03 no 3459 no 9620', example_th: '03-3459-9620', textbook_ref: 'JN60101 Ch.2 p.57' },
+  ...exam2VocabList,
 ];
 
 export const fallbackQuestions: ExamQuestion[] = [];
