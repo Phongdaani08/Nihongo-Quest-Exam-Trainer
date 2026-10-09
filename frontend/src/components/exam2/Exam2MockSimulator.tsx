@@ -11,7 +11,8 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Sparkles
+  Sparkles,
+  SlidersHorizontal
 } from 'lucide-react';
 import { playJapaneseAudio } from '../../utils/speech';
 import {
@@ -40,6 +41,11 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   const [examState, setExamState] = useState<'idle' | 'running' | 'finished'>('idle');
   const [timeLeftSeconds, setTimeLeftSeconds] = useState<number>(180); // 3:00 minutes
   const [currentSection, setCurrentSection] = useState<1 | 2>(1);
+
+  // Practice Scope Setting: 'all' (ทั้ง 2 ส่วน) | 'part1_only' (เฉพาะคำศัพท์) | 'part2_only' (เฉพาะตอบคำถาม)
+  const [practiceScope, setPracticeScope] = useState<'all' | 'part1_only' | 'part2_only'>(() => {
+    return (localStorage.getItem('nihongo_exam2_practice_scope') as any) || 'all';
+  });
 
   // Custom Presets State & LocalStorage
   const [presets, setPresets] = useState<Exam2PracticePreset[]>(() => {
@@ -98,6 +104,10 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   useEffect(() => {
     localStorage.setItem('nihongo_exam2_choice_mode', choiceRevealMode);
   }, [choiceRevealMode]);
+
+  useEffect(() => {
+    localStorage.setItem('nihongo_exam2_practice_scope', practiceScope);
+  }, [practiceScope]);
 
   const activePreset = useMemo(() => {
     return presets.find((p) => p.id === activePresetId) || defaultExam2Presets[0];
@@ -175,29 +185,18 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
       questionsPool = [...allExam2QuestionsPool];
     }
 
-    // Section 1 generation
-    let sec1Count = 5;
-    if (mode === 'endless_infinite') {
-      if (activePreset.part2PatternIds.length === 0 && activePreset.part2QuestionIds?.length === 0) {
-        sec1Count = questionQuantity === 0 ? 50 : questionQuantity;
-      } else if (vocabPool.length > 0) {
-        sec1Count = questionQuantity === 0 ? 30 : Math.ceil(questionQuantity / 3);
-      } else {
-        sec1Count = 0;
-      }
-    }
-
-    const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
-    const pickedSec1 = shuffledVocab.slice(0, sec1Count).map((v) => {
-      const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
-      const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
-      return { item: v, options: opts };
-    });
-
-    // Section 2 generation
+    let pickedSec1: { item: Vocabulary; options: Vocabulary[] }[] = [];
     let pickedSec2: Exam2QuestionItem[] = [];
+
     if (mode === 'timed_3min') {
-      // Strictly 2 questions from each of 5 Patterns = 10 questions
+      // Official Timed Exam: 5 Part 1 Vocab + 10 Part 2 Questions (2 from each pattern) = 15 total
+      const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+      pickedSec1 = shuffledVocab.slice(0, 5).map((v) => {
+        const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
+        const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+        return { item: v, options: opts };
+      });
+
       const p1 = [...exam2LocationQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
       const p2 = [...exam2ClockQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
       const p3 = [...exam2PhoneQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
@@ -205,8 +204,40 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
       const p5 = [...exam2ScheduleQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
       pickedSec2 = [...p1, ...p2, ...p3, ...p4, ...p5];
     } else {
-      let sec2Count = questionQuantity === 0 ? questionsPool.length : Math.max(1, questionQuantity - pickedSec1.length);
-      pickedSec2 = [...questionsPool].sort(() => 0.5 - Math.random()).slice(0, sec2Count);
+      // Endless Infinite / Custom Scope Practice
+      if (practiceScope === 'part1_only') {
+        const count = questionQuantity === 0 ? Math.min(78, vocabPool.length) : questionQuantity;
+        const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+        pickedSec1 = shuffledVocab.slice(0, count).map((v) => {
+          const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
+          const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+          return { item: v, options: opts };
+        });
+        pickedSec2 = [];
+      } else if (practiceScope === 'part2_only') {
+        const count = questionQuantity === 0 ? questionsPool.length : questionQuantity;
+        pickedSec1 = [];
+        pickedSec2 = [...questionsPool].sort(() => 0.5 - Math.random()).slice(0, count);
+      } else {
+        // Both Part 1 & Part 2
+        let sec1Count = 5;
+        let sec2Count = 10;
+        if (questionQuantity === 0) {
+          sec1Count = 15;
+          sec2Count = questionsPool.length;
+        } else {
+          sec1Count = Math.max(1, Math.round(questionQuantity / 3));
+          sec2Count = Math.max(1, questionQuantity - sec1Count);
+        }
+
+        const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+        pickedSec1 = shuffledVocab.slice(0, sec1Count).map((v) => {
+          const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
+          const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+          return { item: v, options: opts };
+        });
+        pickedSec2 = [...questionsPool].sort(() => 0.5 - Math.random()).slice(0, sec2Count);
+      }
     }
 
     setSec1Items(pickedSec1);
@@ -444,6 +475,78 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                 </div>
               </div>
 
+              {/* Practice Scope Selector (Part 1 vs Part 2 vs Both) */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <SlidersHorizontal size={15} color="var(--primary-600)" />
+                  <span>ขอบเขตส่วนข้อสอบที่ต้องการฝึก (Practice Section Scope):</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setPracticeScope('all')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: practiceScope === 'all' ? '2px solid var(--primary-600)' : '1px solid var(--border-strong)',
+                      backgroundColor: practiceScope === 'all' ? 'var(--primary-50)' : 'var(--bg-surface)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: practiceScope === 'all' ? 'var(--primary-700)' : 'var(--text-main)' }}>
+                      🌟 ทั้งสองส่วน (ครบ 15 คะแนน)
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                      ฝึกสุ่มคำศัพท์ส่วนที่ 1 แล้วต่อด้วยคำถาม 5 รูปแบบส่วนที่ 2
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPracticeScope('part1_only')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: practiceScope === 'part1_only' ? '2px solid #8b5cf6' : '1px solid var(--border-strong)',
+                      backgroundColor: practiceScope === 'part1_only' ? 'rgba(139, 92, 246, 0.08)' : 'var(--bg-surface)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: practiceScope === 'part1_only' ? '#7c3aed' : 'var(--text-main)' }}>
+                      📝 เฉพาะส่วนที่ 1: คำศัพท์ ไทย → ญี่ปุ่น
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                      ฝึกเฉพาะการแปลคำศัพท์บทที่ 3 และ 4 ตามคำศัพท์ที่เลือกในพรีเซ็ต
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPracticeScope('part2_only')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: practiceScope === 'part2_only' ? '2px solid #0284c7' : '1px solid var(--border-strong)',
+                      backgroundColor: practiceScope === 'part2_only' ? 'rgba(2, 132, 199, 0.08)' : 'var(--bg-surface)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: practiceScope === 'part2_only' ? '#0284c7' : 'var(--text-main)' }}>
+                      🎮 เฉพาะส่วนที่ 2: ตอบคำถาม 5 รูปแบบ
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                      ฝึกเฉพาะคำถามสถานที่, เวลา, เบอร์โทร, ราคา, ช่วงเวลา
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               {/* Question Quantity Setting */}
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px' }}>
@@ -562,7 +665,14 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                         return (
                           <tr
                             key={preset.id}
-                            onClick={() => setActivePresetId(preset.id)}
+                            onClick={() => {
+                              setActivePresetId(preset.id);
+                              if (preset.part1VocabIds.length > 0 && preset.part2PatternIds.length === 0) {
+                                setPracticeScope('part1_only');
+                              } else if (preset.part1VocabIds.length === 0 && preset.part2PatternIds.length > 0) {
+                                setPracticeScope('part2_only');
+                              }
+                            }}
                             style={{
                               borderBottom: '1px solid var(--border-subtle)',
                               backgroundColor: isActive ? 'var(--primary-50)' : 'transparent',
@@ -1024,25 +1134,29 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
             ชุดข้อสอบ: <strong>{activePreset.name}</strong>
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
-            <div style={{ padding: '16px', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-app)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ส่วนที่ 1 (คำศัพท์)</div>
-              <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--primary-600)', marginTop: '4px' }}>
-                {scoreSec1} / {sec1Items.length}
+          <div style={{ display: 'grid', gridTemplateColumns: sec1Items.length > 0 && sec2Items.length > 0 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            {sec1Items.length > 0 && (
+              <div style={{ padding: '16px', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-app)' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ส่วนที่ 1 (คำศัพท์ ไทย → ญี่ปุ่น)</div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--primary-600)', marginTop: '4px' }}>
+                  {scoreSec1} / {sec1Items.length}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div style={{ padding: '16px', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-app)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ส่วนที่ 2 (5 รูปแบบ)</div>
-              <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--indigo-600)', marginTop: '4px' }}>
-                {scoreSec2} / {sec2Items.length}
+            {sec2Items.length > 0 && (
+              <div style={{ padding: '16px', borderRadius: 'var(--radius-lg)', backgroundColor: 'var(--bg-app)' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>ส่วนที่ 2 (ตอบคำถาม 5 รูปแบบ)</div>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--indigo-600)', marginTop: '4px' }}>
+                  {scoreSec2} / {sec2Items.length}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div style={{ padding: '16px', borderRadius: 'var(--radius-lg)', backgroundColor: totalScore >= 12 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>คะแนนรวม</div>
-              <div style={{ fontSize: '24px', fontWeight: 900, color: totalScore >= 12 ? 'var(--color-success)' : 'var(--color-danger)', marginTop: '4px' }}>
-                {totalScore} / {totalPossible}
+            <div style={{ padding: '16px', borderRadius: 'var(--radius-lg)', backgroundColor: totalScore === totalPossible ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>คะแนนรวมที่ได้</div>
+              <div style={{ fontSize: '24px', fontWeight: 900, color: totalScore === totalPossible ? 'var(--color-success)' : 'var(--color-danger)', marginTop: '4px' }}>
+                {totalScore} / {totalPossible} ({Math.round((totalScore / Math.max(1, totalPossible)) * 100)}%)
               </div>
             </div>
           </div>

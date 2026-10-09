@@ -51,6 +51,14 @@ export const defaultExam2Presets: Exam2PracticePreset[] = [
     part2QuestionIds: [],
   },
   {
+    id: 'preset_e2_part2_only',
+    name: '🎮 เจาะลึกส่วนที่ 2: ตอบคำถาม 5 รูปแบบ (10 คะแนนเต็ม)',
+    isCustom: false,
+    part1VocabIds: [],
+    part2PatternIds: [1, 2, 3, 4, 5],
+    part2QuestionIds: allExam2QuestionsPool.map((q) => q.id),
+  },
+  {
     id: 'preset_e2_locations',
     name: '🏢 เน้นสถานที่ & ผังอาคาร (Koko wa doko desuka)',
     isCustom: false,
