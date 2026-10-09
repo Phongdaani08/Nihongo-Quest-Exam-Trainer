@@ -41,7 +41,7 @@ export const LocationNavigator: React.FC = () => {
     }));
 
     if (isCorrect) {
-      playJapaneseAudio(currentQ.targetAnswerRomaji);
+      playJapaneseAudio(currentQ.targetAnswerKana || currentQ.targetAnswerRomaji);
     }
   };
 
@@ -173,7 +173,7 @@ export const LocationNavigator: React.FC = () => {
               <Volume2 size={16} /> ฟังเสียงคำถาม
             </button>
             <button
-              onClick={() => playJapaneseAudio(currentQ.targetAnswerRomaji)}
+              onClick={() => playJapaneseAudio(currentQ.targetAnswerKana || currentQ.targetAnswerRomaji)}
               className="btn-outline"
               style={{ padding: '8px 16px', fontSize: '13px' }}
             >

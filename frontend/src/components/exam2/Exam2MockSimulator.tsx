@@ -278,7 +278,7 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
     }
 
     if (isCorrect) {
-      playJapaneseAudio(current.item.word_romaji);
+      playJapaneseAudio(current.item.word_kana || current.item.word_romaji);
     }
 
     setTimeout(() => {
@@ -338,7 +338,7 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
     }
 
     if (isCorrect) {
-      playJapaneseAudio(current.targetAnswerRomaji);
+      playJapaneseAudio(current.targetAnswerKana || current.promptJp);
     }
 
     setTimeout(() => {
