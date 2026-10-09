@@ -12,9 +12,10 @@ import {
   Edit2,
   Trash2,
   Sparkles,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Volume2
 } from 'lucide-react';
-import { playJapaneseAudio } from '../../utils/speech';
+import { playJapaneseAudio, playThaiAudio } from '../../utils/speech';
 import {
   exam2VocabList,
   exam2LocationQuestions,
@@ -41,6 +42,7 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   const [examState, setExamState] = useState<'idle' | 'running' | 'finished'>('idle');
   const [timeLeftSeconds, setTimeLeftSeconds] = useState<number>(180); // 3:00 minutes
   const [currentSection, setCurrentSection] = useState<1 | 2>(1);
+  const [loopRound, setLoopRound] = useState<number>(1);
 
   // Practice Scope Setting: 'all' (ทั้ง 2 ส่วน) | 'part1_only' (เฉพาะคำศัพท์) | 'part2_only' (เฉพาะตอบคำถาม)
   const [practiceScope, setPracticeScope] = useState<'all' | 'part1_only' | 'part2_only'>(() => {
@@ -64,8 +66,8 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   const [isPresetModalOpen, setIsPresetModalOpen] = useState<boolean>(false);
   const [editingPreset, setEditingPreset] = useState<Exam2PracticePreset | null>(null);
 
-  // Question Quantity for Endless Mode: 5, 10, 15, 20, 30, or 0 (Endless)
-  const [questionQuantity, setQuestionQuantity] = useState<number>(15);
+  // Question Quantity for Endless Mode: 5, 10, 15, 20, 30, or 0 (Endless All Words in Preset)
+  const [questionQuantity, setQuestionQuantity] = useState<number>(0);
 
   // Section 1: Vocab Words (Thai -> Japanese)
   const [sec1Items, setSec1Items] = useState<{ item: Vocabulary; options: Vocabulary[] }[]>([]);
@@ -112,6 +114,13 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   const activePreset = useMemo(() => {
     return presets.find((p) => p.id === activePresetId) || defaultExam2Presets[0];
   }, [presets, activePresetId]);
+
+  // Auto-play Thai Audio when Section 1 Thai prompt appears
+  useEffect(() => {
+    if (examState === 'running' && currentSection === 1 && sec1Items[sec1Index]) {
+      playThaiAudio(sec1Items[sec1Index].item.meaning_th);
+    }
+  }, [examState, currentSection, sec1Index, sec1Items]);
 
   // Handlers for Preset Management
   const handleOpenCreatePreset = () => {
@@ -166,8 +175,9 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
 
   const handleStartExam = (mode: 'timed_3min' | 'endless_infinite' = examMode) => {
     setExamMode(mode);
+    setLoopRound(1);
 
-    // Filter Vocabularies based on active preset
+    // Filter Vocabularies based on active preset (Uses all selected words in preset)
     let vocabPool = exam2VocabList.filter((v) => activePreset.part1VocabIds.includes(v.id));
     if (vocabPool.length === 0) vocabPool = [...exam2VocabList];
 
@@ -204,10 +214,10 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
       const p5 = [...exam2ScheduleQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
       pickedSec2 = [...p1, ...p2, ...p3, ...p4, ...p5];
     } else {
-      // Endless Infinite / Custom Scope Practice
+      // Endless Infinite: Exact full count of words selected in the preset, randomly shuffled
       if (practiceScope === 'part1_only') {
-        const count = questionQuantity === 0 ? Math.min(78, vocabPool.length) : questionQuantity;
         const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+        const count = questionQuantity === 0 ? shuffledVocab.length : Math.min(questionQuantity, shuffledVocab.length);
         pickedSec1 = shuffledVocab.slice(0, count).map((v) => {
           const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
           const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
@@ -215,28 +225,23 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
         });
         pickedSec2 = [];
       } else if (practiceScope === 'part2_only') {
-        const count = questionQuantity === 0 ? questionsPool.length : questionQuantity;
+        const shuffledQuestions = [...questionsPool].sort(() => 0.5 - Math.random());
+        const count = questionQuantity === 0 ? shuffledQuestions.length : Math.min(questionQuantity, shuffledQuestions.length);
         pickedSec1 = [];
-        pickedSec2 = [...questionsPool].sort(() => 0.5 - Math.random()).slice(0, count);
+        pickedSec2 = shuffledQuestions.slice(0, count);
       } else {
-        // Both Part 1 & Part 2
-        let sec1Count = 5;
-        let sec2Count = 10;
-        if (questionQuantity === 0) {
-          sec1Count = 15;
-          sec2Count = questionsPool.length;
-        } else {
-          sec1Count = Math.max(1, Math.round(questionQuantity / 3));
-          sec2Count = Math.max(1, questionQuantity - sec1Count);
-        }
-
+        // Both Part 1 & Part 2: All words in preset + All questions in preset
         const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+        const sec1Count = questionQuantity === 0 ? shuffledVocab.length : Math.max(1, Math.round(questionQuantity / 3));
         pickedSec1 = shuffledVocab.slice(0, sec1Count).map((v) => {
           const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
           const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
           return { item: v, options: opts };
         });
-        pickedSec2 = [...questionsPool].sort(() => 0.5 - Math.random()).slice(0, sec2Count);
+
+        const shuffledQuestions = [...questionsPool].sort(() => 0.5 - Math.random());
+        const sec2Count = questionQuantity === 0 ? shuffledQuestions.length : Math.max(1, questionQuantity - sec1Count);
+        pickedSec2 = shuffledQuestions.slice(0, sec2Count);
       }
     }
 
@@ -282,10 +287,30 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
       if (sec1Index + 1 < sec1Items.length) {
         setSec1Index((prev) => prev + 1);
       } else {
-        if (sec2Items.length > 0) {
-          setCurrentSection(2);
+        // Reached the end of Section 1
+        if (examMode === 'endless_infinite') {
+          if (practiceScope === 'part1_only' || sec2Items.length === 0) {
+            // Endless Continuous Loop: Reshuffle all words in preset and loop seamlessly forever!
+            let vocabPool = exam2VocabList.filter((v) => activePreset.part1VocabIds.includes(v.id));
+            if (vocabPool.length === 0) vocabPool = [...exam2VocabList];
+            const reshuffled = [...vocabPool].sort(() => 0.5 - Math.random()).map((v) => {
+              const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
+              const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+              return { item: v, options: opts };
+            });
+            setSec1Items(reshuffled);
+            setSec1Index(0);
+            setLoopRound((prev) => prev + 1);
+          } else {
+            setCurrentSection(2);
+            setSec2Index(0);
+          }
         } else {
-          handleFinishExam();
+          if (sec2Items.length > 0) {
+            setCurrentSection(2);
+          } else {
+            handleFinishExam();
+          }
         }
       }
     }, 450);
@@ -322,7 +347,43 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
       if (sec2Index + 1 < sec2Items.length) {
         setSec2Index((prev) => prev + 1);
       } else {
-        handleFinishExam();
+        // Reached the end of Section 2
+        if (examMode === 'endless_infinite') {
+          if (practiceScope === 'part2_only' || sec1Items.length === 0) {
+            // Endless Continuous Loop: Reshuffle questions and loop seamlessly!
+            let questionsPool = allExam2QuestionsPool.filter((q) => {
+              if (activePreset.part2QuestionIds && activePreset.part2QuestionIds.length > 0) {
+                return activePreset.part2QuestionIds.includes(q.id);
+              }
+              return activePreset.part2PatternIds.includes(q.patternId);
+            });
+            if (questionsPool.length === 0) questionsPool = [...allExam2QuestionsPool];
+            const reshuffled = [...questionsPool].sort(() => 0.5 - Math.random());
+            setSec2Items(reshuffled);
+            setSec2Index(0);
+            setLoopRound((prev) => prev + 1);
+          } else {
+            // Both mode: Loop back to reshuffled Section 1
+            let vocabPool = exam2VocabList.filter((v) => activePreset.part1VocabIds.includes(v.id));
+            if (vocabPool.length === 0) vocabPool = [...exam2VocabList];
+            const reshuffledSec1 = [...vocabPool].sort(() => 0.5 - Math.random()).map((v) => {
+              const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
+              const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+              return { item: v, options: opts };
+            });
+            let questionsPool = allExam2QuestionsPool.filter((q) => activePreset.part2PatternIds.includes(q.patternId));
+            if (questionsPool.length === 0) questionsPool = [...allExam2QuestionsPool];
+            const reshuffledSec2 = [...questionsPool].sort(() => 0.5 - Math.random());
+
+            setSec1Items(reshuffledSec1);
+            setSec2Items(reshuffledSec2);
+            setCurrentSection(1);
+            setSec1Index(0);
+            setLoopRound((prev) => prev + 1);
+          }
+        } else {
+          handleFinishExam();
+        }
       }
     }, 450);
   };
@@ -851,7 +912,11 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                 {currentSection === 1 ? 'ส่วนที่ 1: คำศัพท์' : 'ส่วนที่ 2: ตอบคำถาม'}
               </span>
               <span style={{ fontSize: '13.5px', fontWeight: 700 }}>
-                {currentSection === 1
+                {examMode === 'endless_infinite'
+                  ? currentSection === 1
+                    ? `คำที่ ${sec1Index + 1} / ${sec1Items.length} (สุ่มทั้งหมด ${sec1Items.length} คำในพรีเซ็ต) • รอบที่ ${loopRound}`
+                    : `ข้อที่ ${sec2Index + 1} / ${sec2Items.length} (สุ่มทั้งหมด ${sec2Items.length} ข้อในพรีเซ็ต) • รอบที่ ${loopRound}`
+                  : currentSection === 1
                   ? `ข้อที่ ${sec1Index + 1} / ${sec1Items.length}`
                   : `ข้อที่ ${sec2Index + 1 + sec1Items.length} / ${sec1Items.length + sec2Items.length}`}
               </span>
@@ -913,22 +978,43 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                 width: '100%',
               }}
             >
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '8px' }}>
                 อาจารย์ถามคำศัพท์ภาษาไทย (5 คะแนน):
               </div>
-              <div
-                style={{
-                  fontSize: '32px',
-                  fontWeight: 900,
-                  color: 'var(--text-main)',
-                  padding: '16px 24px',
-                  borderRadius: 'var(--radius-lg)',
-                  backgroundColor: 'var(--bg-app)',
-                  display: 'inline-block',
-                  marginBottom: '24px',
-                }}
-              >
-                "{sec1Items[sec1Index].item.meaning_th}"
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
+                <div
+                  style={{
+                    fontSize: '30px',
+                    fontWeight: 900,
+                    color: 'var(--text-main)',
+                    padding: '16px 28px',
+                    borderRadius: 'var(--radius-lg)',
+                    backgroundColor: 'var(--bg-app)',
+                    display: 'inline-block',
+                  }}
+                >
+                  "{sec1Items[sec1Index].item.meaning_th}"
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => playThaiAudio(sec1Items[sec1Index].item.meaning_th)}
+                  className="btn btn-secondary"
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                  title="กดเพื่อฟังเสียงภาษาไทยซ้ำ"
+                >
+                  <Volume2 size={20} color="var(--primary-600)" />
+                </button>
               </div>
 
               {/* Active Recall Toggle (If Hidden) */}
@@ -1029,11 +1115,23 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                   padding: '18px 24px',
                   borderRadius: 'var(--radius-lg)',
                   backgroundColor: 'var(--bg-app)',
-                  textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
                   marginBottom: '20px',
                 }}
               >
-                {sec2Items[sec2Index].promptJp}
+                <span>{sec2Items[sec2Index].promptJp}</span>
+                <button
+                  type="button"
+                  onClick={() => playJapaneseAudio(sec2Items[sec2Index].promptJp)}
+                  className="btn btn-secondary"
+                  style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="ฟังเสียงคำถามภาษาญี่ปุ่น"
+                >
+                  <Volume2 size={18} color="var(--primary-600)" />
+                </button>
               </div>
 
               {/* Active Recall Toggle (If Hidden) */}
