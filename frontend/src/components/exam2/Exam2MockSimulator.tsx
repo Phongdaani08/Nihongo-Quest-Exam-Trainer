@@ -5,9 +5,13 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
-  SlidersHorizontal,
   Flame,
-  Award
+  Award,
+  BookOpen,
+  Plus,
+  Edit2,
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { playJapaneseAudio } from '../../utils/speech';
 import {
@@ -24,7 +28,7 @@ import { Vocabulary } from '../../types';
 import {
   Exam2PracticePreset,
   defaultExam2Presets,
-  Exam2PresetManagerModal
+  Exam2PresetEditorModal
 } from './Exam2CustomPresetManagerModal';
 
 interface Exam2MockProps {
@@ -38,16 +42,21 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   const [currentSection, setCurrentSection] = useState<1 | 2>(1);
 
   // Custom Presets State & LocalStorage
-  const [customPresets, setCustomPresets] = useState<Exam2PracticePreset[]>(() => {
+  const [presets, setPresets] = useState<Exam2PracticePreset[]>(() => {
     try {
       const saved = localStorage.getItem('nihongo_exam2_custom_presets');
-      return saved ? JSON.parse(saved) : [];
+      return saved ? JSON.parse(saved) : defaultExam2Presets;
     } catch (e) {
-      return [];
+      return defaultExam2Presets;
     }
   });
-  const [activePresetId, setActivePresetId] = useState<string>('preset_e2_all');
+
+  const [activePresetId, setActivePresetId] = useState<string>(() => {
+    return localStorage.getItem('nihongo_exam2_active_preset_id') || 'preset_e2_all';
+  });
+
   const [isPresetModalOpen, setIsPresetModalOpen] = useState<boolean>(false);
+  const [editingPreset, setEditingPreset] = useState<Exam2PracticePreset | null>(null);
 
   // Question Quantity for Endless Mode: 5, 10, 15, 20, 30, or 0 (Endless)
   const [questionQuantity, setQuestionQuantity] = useState<number>(15);
@@ -65,7 +74,9 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   const [sec2Feedback, setSec2Feedback] = useState<{ isCorrect: boolean; selected: string; correct: string } | null>(null);
 
   // Choice reveal toggle (Flashcard Active Recall)
-  const [choiceRevealMode, setChoiceRevealMode] = useState<'instant' | 'hidden'>('instant');
+  const [choiceRevealMode, setChoiceRevealMode] = useState<'instant' | 'hidden'>(() => {
+    return (localStorage.getItem('nihongo_exam2_choice_mode') as 'instant' | 'hidden') || 'instant';
+  });
   const [isChoiceRevealed, setIsChoiceRevealed] = useState<boolean>(true);
   const [showRomaji, setShowRomaji] = useState<boolean>(true);
 
@@ -76,17 +87,53 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
     streak: 0,
   });
 
-  const allPresets = useMemo(() => [...defaultExam2Presets, ...customPresets], [customPresets]);
-  const activePreset = useMemo(() => {
-    return allPresets.find((p) => p.id === activePresetId) || defaultExam2Presets[0];
-  }, [allPresets, activePresetId]);
+  useEffect(() => {
+    localStorage.setItem('nihongo_exam2_custom_presets', JSON.stringify(presets));
+  }, [presets]);
 
-  const handleSaveCustomPresets = (updated: Exam2PracticePreset[]) => {
-    setCustomPresets(updated);
-    try {
-      localStorage.setItem('nihongo_exam2_custom_presets', JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
+  useEffect(() => {
+    localStorage.setItem('nihongo_exam2_active_preset_id', activePresetId);
+  }, [activePresetId]);
+
+  useEffect(() => {
+    localStorage.setItem('nihongo_exam2_choice_mode', choiceRevealMode);
+  }, [choiceRevealMode]);
+
+  const activePreset = useMemo(() => {
+    return presets.find((p) => p.id === activePresetId) || defaultExam2Presets[0];
+  }, [presets, activePresetId]);
+
+  // Handlers for Preset Management
+  const handleOpenCreatePreset = () => {
+    setEditingPreset(null);
+    setIsPresetModalOpen(true);
+  };
+
+  const handleOpenEditPreset = (preset: Exam2PracticePreset, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingPreset(preset);
+    setIsPresetModalOpen(true);
+  };
+
+  const handleSavePreset = (savedPreset: Exam2PracticePreset) => {
+    setPresets((prev) => {
+      const exists = prev.some((p) => p.id === savedPreset.id);
+      if (exists) {
+        return prev.map((p) => (p.id === savedPreset.id ? savedPreset : p));
+      } else {
+        return [...prev, savedPreset];
+      }
+    });
+    setActivePresetId(savedPreset.id);
+  };
+
+  const handleDeletePreset = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm('คุณต้องการลบชุดฝึกซ้อมนี้ใช่หรือไม่?')) {
+      setPresets((prev) => prev.filter((p) => p.id !== id));
+      if (activePresetId === id) {
+        setActivePresetId('preset_e2_all');
+      }
     }
   };
 
@@ -260,14 +307,12 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Preset Manager Modal */}
-      <Exam2PresetManagerModal
+      {/* Preset Editor Modal */}
+      <Exam2PresetEditorModal
         isOpen={isPresetModalOpen}
         onClose={() => setIsPresetModalOpen(false)}
-        activePresetId={activePresetId}
-        onSelectPreset={(id) => setActivePresetId(id)}
-        customPresets={customPresets}
-        onSaveCustomPresets={handleSaveCustomPresets}
+        onSave={handleSavePreset}
+        editingPreset={editingPreset}
       />
 
       {/* Header Banner */}
@@ -312,64 +357,103 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
         </div>
       </div>
 
-      {/* 1. IDLE STATE: Mode & Preset Configuration */}
+      {/* 1. IDLE STATE: Endless Presets Table & Mode Configuration */}
       {examState === 'idle' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Preset & Filters Bar (Endless Mode) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Endless Configuration Card */}
           {examMode === 'endless_infinite' && (
-            <div className="card" style={{ backgroundColor: 'var(--bg-surface)', padding: '20px 24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <SlidersHorizontal size={18} color="var(--primary-600)" />
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}>
-                    เลือกชุดฝึกซ้อม (Practice Preset) & กำหนดจำนวนข้อ
-                  </h3>
+            <div className="card" style={{ backgroundColor: 'var(--bg-surface)', padding: '24px' }}>
+              {/* Ready Status Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 18px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  marginBottom: '20px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Sparkles size={20} color="var(--color-success)" />
+                  <div>
+                    <div style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--color-success)' }}>
+                      ระบบพร้อมเริ่มสุ่มโจทย์ฝึกทำทันที
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      เลือกพรีเซ็ตด้านล่าง แล้วคลิกปุ่มเริ่มฝึกซ้อมเพื่อเข้าสู่สนามสอบ
+                    </div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPresetModalOpen(true)}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <SlidersHorizontal size={14} /> จัดการชุดฝึกซ้อม (Preset Manager)
-                </button>
+
+                <div style={{ fontSize: '12.5px', color: 'var(--color-success)', fontWeight: 700 }}>
+                  คะแนนปัจจุบัน: {endlessStats.correct} / {endlessStats.total}
+                </div>
               </div>
 
-              {/* Preset Chips */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-                {allPresets.map((preset) => {
-                  const isActive = activePresetId === preset.id;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => setActivePresetId(preset.id)}
-                      style={{
-                        padding: '8px 14px',
-                        borderRadius: 'var(--radius-md)',
-                        border: isActive ? '1.5px solid var(--primary-600)' : '1px solid var(--border-subtle)',
-                        backgroundColor: isActive ? 'var(--primary-50)' : 'var(--bg-app)',
-                        color: isActive ? 'var(--primary-700)' : 'var(--text-main)',
-                        fontSize: '12.5px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {preset.name}
-                    </button>
-                  );
-                })}
+              {/* Choice Visibility Mode Setting */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Eye size={15} color="var(--primary-600)" />
+                  <span>รูปแบบการแสดงตัวเลือก (Active Recall vs Instant):</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setChoiceRevealMode('instant')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: choiceRevealMode === 'instant' ? '2px solid var(--primary-600)' : '1px solid var(--border-strong)',
+                      backgroundColor: choiceRevealMode === 'instant' ? 'var(--primary-50)' : 'var(--bg-surface)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: choiceRevealMode === 'instant' ? 'var(--primary-700)' : 'var(--text-main)' }}>
+                      <Eye size={15} /> แสดงชอยส์ทันที (Default)
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                      แสดงโจทย์พร้อมตัวเลือกคำตอบทันทีเมื่อเริ่มแต่ละข้อ
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setChoiceRevealMode('hidden')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: choiceRevealMode === 'hidden' ? '2px solid var(--color-success)' : '1px solid var(--border-strong)',
+                      backgroundColor: choiceRevealMode === 'hidden' ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-surface)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '13.5px', color: choiceRevealMode === 'hidden' ? 'var(--color-success)' : 'var(--text-main)' }}>
+                      <EyeOff size={15} /> ซ่อนชอยส์ฝึกจำปากเปล่า (Active Recall)
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                      ซ่อนตัวเลือกไว้ก่อน เพื่อฝึกนึกคำศัพท์และตอบในใจก่อนคลิกเปิดดู
+                    </div>
+                  </button>
+                </div>
               </div>
 
-              {/* Question Quantity Picker */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '14px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>จำนวนข้อที่ต้องการฝึก:</span>
-                <div style={{ display: 'flex', gap: '6px' }}>
+              {/* Question Quantity Setting */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px' }}>
+                  จำนวนข้อที่ต้องการฝึกในแต่ละรอบ:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {[
                     { label: '5 ข้อ', val: 5 },
                     { label: '10 ข้อ', val: 10 },
-                    { label: '15 ข้อ (Mock)', val: 15 },
+                    { label: '15 ข้อ (Mock เต็ม)', val: 15 },
                     { label: '20 ข้อ', val: 20 },
                     { label: '30 ข้อ', val: 30 },
                     { label: 'ไม่จำกัด (Endless)', val: 0 },
@@ -379,14 +463,15 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                       type="button"
                       onClick={() => setQuestionQuantity(qty.val)}
                       style={{
-                        padding: '6px 12px',
-                        borderRadius: 'var(--radius-sm)',
+                        padding: '8px 16px',
+                        borderRadius: 'var(--radius-md)',
                         border: questionQuantity === qty.val ? '1.5px solid var(--primary-600)' : '1px solid var(--border-subtle)',
                         backgroundColor: questionQuantity === qty.val ? 'var(--primary-600)' : 'var(--bg-app)',
                         color: questionQuantity === qty.val ? '#ffffff' : 'var(--text-main)',
-                        fontSize: '12px',
+                        fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer',
+                        transition: 'all 0.15s ease',
                       }}
                     >
                       {qty.label}
@@ -394,89 +479,246 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                   ))}
                 </div>
               </div>
+
+              {/* CUSTOM PRESETS & VOCABULARY SELECTION TABLE (IDENTICAL TO EXAM 1) */}
+              <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <BookOpen size={16} color="var(--primary-600)" />
+                      <span>เลือกคำศัพท์ / ข้อสอบที่ต้องการฝึก (Custom Practice Presets รอบที่ 2)</span>
+                    </div>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                      เลือกชุดคำศัพท์บทที่ 3-4 หรือเลือก 5 รูปแบบคำถามที่ต้องการเน้นฝึกซ้อม ระบบจะสุ่มเฉพาะรายการที่กำหนด
+                    </p>
+                  </div>
+
+                  {/* CREATE NEW PRESET BUTTON */}
+                  <button
+                    type="button"
+                    onClick={handleOpenCreatePreset}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      borderRadius: 'var(--radius-md)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Plus size={16} /> สร้างพรีเซ็ตใหม่
+                  </button>
+                </div>
+
+                {/* PRESETS TABLE */}
+                <div
+                  style={{
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-surface)',
+                    overflowX: 'auto',
+                  }}
+                >
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: 'var(--bg-app)', borderBottom: '1px solid var(--border-subtle)' }}>
+                        <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '65px', textAlign: 'center' }}>
+                          เลือกใช้
+                        </th>
+                        <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '100px' }}>
+                          ประเภท
+                        </th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '220px' }}>
+                          ชื่อชุดพรีเซ็ต
+                        </th>
+                        <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '110px', textAlign: 'center' }}>
+                          คำศัพท์ส่วน 1
+                        </th>
+                        <th style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '220px' }}>
+                          ส่วนที่ 2: 5 รูปแบบคำถาม
+                        </th>
+                        <th style={{ padding: '12px', fontWeight: 700, color: 'var(--text-secondary)', width: '90px', textAlign: 'center' }}>
+                          จัดการ
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {presets.map((preset) => {
+                        const isActive = activePresetId === preset.id;
+                        const matchedVocabs = exam2VocabList.filter((v) => preset.part1VocabIds.includes(v.id));
+                        const previewVocabs = matchedVocabs.slice(0, 3);
+                        const remainingVocab = matchedVocabs.length - 3;
+
+                        const patternNames: Record<number, string> = {
+                          1: 'สถานที่',
+                          2: 'บอกเวลา',
+                          3: 'เบอร์โทร',
+                          4: 'ป้ายราคา',
+                          5: 'ช่วงเวลา',
+                        };
+
+                        return (
+                          <tr
+                            key={preset.id}
+                            onClick={() => setActivePresetId(preset.id)}
+                            style={{
+                              borderBottom: '1px solid var(--border-subtle)',
+                              backgroundColor: isActive ? 'var(--primary-50)' : 'transparent',
+                              cursor: 'pointer',
+                              transition: 'background-color 0.15s ease',
+                            }}
+                          >
+                            {/* Radio selector */}
+                            <td style={{ padding: '14px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div
+                                  style={{
+                                    width: '18px',
+                                    height: '18px',
+                                    borderRadius: '50%',
+                                    border: isActive ? '5.5px solid var(--primary-600)' : '1.5px solid var(--border-strong)',
+                                    backgroundColor: 'var(--bg-surface)',
+                                    boxSizing: 'border-box',
+                                  }}
+                                />
+                              </div>
+                            </td>
+
+                            {/* Type Badge */}
+                            <td style={{ padding: '14px 12px', verticalAlign: 'middle' }}>
+                              {preset.isCustom ? (
+                                <span className="badge badge-ref" style={{ fontSize: '11px' }}>กำหนดเอง</span>
+                              ) : (
+                                <span className="badge badge-primary" style={{ fontSize: '11px' }}>ระบบ</span>
+                              )}
+                            </td>
+
+                            {/* Preset Name */}
+                            <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                              <div style={{ fontWeight: 800, color: isActive ? 'var(--primary-700)' : 'var(--text-main)', fontSize: '13.5px' }}>
+                                {preset.name}
+                              </div>
+                            </td>
+
+                            {/* Part 1 Vocabs Count & Preview */}
+                            <td style={{ padding: '14px 12px', verticalAlign: 'middle', textAlign: 'center' }}>
+                              <div style={{ fontWeight: 700, color: 'var(--primary-600)', marginBottom: '4px' }}>
+                                {matchedVocabs.length} คำ
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'center' }}>
+                                {previewVocabs.map((v) => (
+                                  <span key={v.id} style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--bg-app)', color: 'var(--text-muted)' }}>
+                                    {v.word_romaji}
+                                  </span>
+                                ))}
+                                {remainingVocab > 0 && (
+                                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+{remainingVocab}</span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Part 2 Patterns */}
+                            <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                {preset.part2PatternIds.map((pId) => (
+                                  <span key={pId} className="badge badge-primary" style={{ fontSize: '10.5px' }}>
+                                    {patternNames[pId] || `รูปแบบ ${pId}`}
+                                  </span>
+                                ))}
+                                {preset.part2PatternIds.length === 0 && (
+                                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>(เน้นเฉพาะคำศัพท์)</span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Actions */}
+                            <td style={{ padding: '14px 12px', verticalAlign: 'middle', textAlign: 'center' }}>
+                              {preset.isCustom ? (
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleOpenEditPreset(preset, e)}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '5px 8px' }}
+                                    title="แก้ไขพรีเซ็ต"
+                                  >
+                                    <Edit2 size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeletePreset(preset.id, e)}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '5px 8px', color: 'var(--color-danger)' }}
+                                    title="ลบพรีเซ็ต"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>พรีเซ็ตหลัก</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Start Endless Button */}
+              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => handleStartExam('endless_infinite')}
+                  className="btn btn-primary"
+                  style={{ padding: '14px 36px', fontSize: '15px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <InfinityIcon size={20} /> เริ่มฝึกซ้อมตามชุดที่เลือก ({activePreset.name})
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Mode Selector Hero */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-            {/* Timed Mode Card */}
+          {/* Timed Mode Card (When Mode is timed_3min) */}
+          {examMode === 'timed_3min' && (
             <div
               className="card"
               style={{
-                padding: '32px',
+                padding: '36px',
                 backgroundColor: 'var(--bg-surface)',
-                border: examMode === 'timed_3min' ? '2px solid var(--primary-600)' : '1px solid var(--border-subtle)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
+                border: '2px solid var(--primary-600)',
+                maxWidth: '680px',
+                margin: '0 auto',
+                textAlign: 'center',
               }}
             >
-              <div>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--primary-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                  <Timer size={28} color="var(--primary-600)" />
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>
-                  โหมดสอบจริงจับเวลา (Timed 3 Mins)
-                </h3>
-                <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
-                  จำลองการสอบ 15 ข้อ จับเวลานับถอยหลัง 3:00 นาที (180 วินาที) ข้อสอบสุ่มตรงตามสัดส่วนข้อสอบจริง (ส่วน 1 = 5 ข้อ, ส่วน 2 = 10 ข้อ)
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '20px' }}>
-                  <div>• ส่วนที่ 1: คำศัพท์ ไทย → ญี่ปุ่น (5 ข้อ)</div>
-                  <div>• ส่วนที่ 2: ตอบคำถาม 5 รูปแบบ x 2 ข้อ (10 ข้อ)</div>
-                  <div>• ตัวจับเวลานับถอยหลัง 180 วินาที</div>
-                </div>
+              <div style={{ width: '56px', height: '56px', borderRadius: '14px', backgroundColor: 'var(--primary-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <Timer size={32} color="var(--primary-600)" />
               </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '8px' }}>
+                ห้องสอบจำลองจับเวลา 3:00 นาที (Mock Exam Simulator)
+              </h3>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
+                ข้อสอบ 15 ข้อเต็มตรงตามระเบียบการสอบจริง:
+                <br />
+                • <strong>ส่วนที่ 1 (5 ข้อ = 5 คะแนน):</strong> คำศัพท์ ไทย → ญี่ปุ่น
+                <br />
+                • <strong>ส่วนที่ 2 (10 ข้อ = 10 คะแนน):</strong> ตอบคำถาม 5 รูปแบบ รูปแบบละ 2 ข้อพอดี
+              </p>
 
               <button
                 type="button"
                 onClick={() => handleStartExam('timed_3min')}
                 className="btn btn-primary"
-                style={{ padding: '12px', fontSize: '14px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ padding: '14px 32px', fontSize: '15px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
               >
-                <Timer size={18} /> เริ่มสอบจริงจับเวลา (15 ข้อ / 3 นาที)
+                <Timer size={18} /> เข้าสู่ห้องสอบจำลองจับเวลา 3 นาที
               </button>
             </div>
-
-            {/* Endless Mode Card */}
-            <div
-              className="card"
-              style={{
-                padding: '32px',
-                backgroundColor: 'var(--bg-surface)',
-                border: examMode === 'endless_infinite' ? '2px solid var(--primary-600)' : '1px solid var(--border-subtle)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'var(--indigo-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-                  <InfinityIcon size={28} color="#6366f1" />
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>
-                  โหมดฝึกซ้อมไม่จำกัดเวลา (Endless Practice)
-                </h3>
-                <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
-                  ฝึกทำซ้ำจนคล่องแคล่วโดยไม่มีตัวจับเวลากดดัน สามารถเลือกพรีเซ็ตเฉพาะเรื่องที่อยากเน้น เช่น สถานที่, เวลา, เบอร์โทร หรือ ป้ายราคา
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: 'var(--text-main)', marginBottom: '20px' }}>
-                  <div>• พรีเซ็ตที่เลือก: <strong>{activePreset.name}</strong></div>
-                  <div>• จำนวนข้อ: <strong>{questionQuantity === 0 ? 'ไม่จำกัด (Endless)' : `${questionQuantity} ข้อ`}</strong></div>
-                  <div>• ระบบ Streak สะสมความถูกต้องต่อเนื่อง</div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleStartExam('endless_infinite')}
-                className="btn btn-secondary"
-                style={{ padding: '12px', fontSize: '14px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                <InfinityIcon size={18} /> เริ่มฝึกซ้อมตามพรีเซ็ตที่เลือก
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
