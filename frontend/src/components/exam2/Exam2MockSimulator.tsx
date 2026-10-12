@@ -1117,7 +1117,33 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                 <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{sec2Items[sec2Index].promptTh}</span>
               </div>
 
-              {/* Japanese Question Prompt */}
+              {/* Visual Photo Box (Real Photo from Chapter 3-4 slides without spoilers) */}
+              {sec2Items[sec2Index].imageSrc && (
+                <div
+                  style={{
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '12px',
+                    backgroundColor: 'var(--bg-app)',
+                    textAlign: 'center',
+                    minHeight: '240px',
+                    maxHeight: '300px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '20px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={sec2Items[sec2Index].imageSrc}
+                    alt={sec2Items[sec2Index].meaningTh}
+                    style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)' }}
+                  />
+                </div>
+              )}
+
+              {/* Japanese/Romaji Question Prompt */}
               <div
                 style={{
                   fontSize: '24px',
@@ -1133,10 +1159,10 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                   marginBottom: '20px',
                 }}
               >
-                <span>{sec2Items[sec2Index].promptJp}</span>
+                <span>"{sec2Items[sec2Index].promptRomaji || sec2Items[sec2Index].promptJp}"</span>
                 <button
                   type="button"
-                  onClick={() => playJapaneseAudio(sec2Items[sec2Index].promptJp)}
+                  onClick={() => playJapaneseAudio(sec2Items[sec2Index].promptRomaji || sec2Items[sec2Index].promptJp)}
                   className="btn btn-secondary"
                   style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                   title="ฟังเสียงคำถามภาษาญี่ปุ่น"

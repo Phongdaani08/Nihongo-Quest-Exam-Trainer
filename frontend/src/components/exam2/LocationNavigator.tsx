@@ -7,14 +7,9 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
-  Building2,
   Compass,
   ArrowRight,
   HelpCircle,
-  Users,
-  BookOpen,
-  Mail,
-  Utensils
 } from 'lucide-react';
 import { playJapaneseAudio } from '../../utils/speech';
 import { exam2LocationQuestions, Exam2QuestionItem } from '../../services/exam2Data';
@@ -56,16 +51,6 @@ export const LocationNavigator: React.FC = () => {
     setIsAnswered(false);
     setCurrentIndex(0);
     setScore({ correct: 0, total: 0 });
-  };
-
-  const getLocationIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Users': return <Users size={48} className="text-primary-500" />;
-      case 'BookOpen': return <BookOpen size={48} className="text-indigo-500" />;
-      case 'Mail': return <Mail size={48} className="text-rose-500" />;
-      case 'Utensils': return <Utensils size={48} className="text-amber-500" />;
-      default: return <Building2 size={48} className="text-emerald-500" />;
-    }
   };
 
   return (
@@ -113,60 +98,51 @@ export const LocationNavigator: React.FC = () => {
             </span>
           </div>
 
-          {/* Visual Scene Box */}
+          {/* Visual Photo Box (Real Photo from Chapter 3-4 slides without spoilers) */}
           <div style={{
             width: '100%',
-            height: '220px',
+            height: '240px',
             borderRadius: 'var(--radius-lg)',
             backgroundColor: 'var(--bg-subtle)',
             border: '2px solid var(--border-subtle)',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '12px',
+            padding: '10px',
             position: 'relative',
             overflow: 'hidden',
             marginBottom: '20px'
           }}>
-            <div style={{
-              width: '88px',
-              height: '88px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--bg-surface)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'var(--shadow-md)',
-              border: '2px solid var(--border-strong)'
-            }}>
-              {getLocationIcon(currentQ.visualData.iconName)}
-            </div>
-
-            <div style={{ zIndex: 2 }}>
-              <span className="badge badge-primary" style={{ fontSize: '14px', padding: '6px 14px' }}>
-                {currentQ.visualData.nameTh}
-              </span>
-            </div>
+            {currentQ.imageSrc ? (
+              <img
+                src={currentQ.imageSrc}
+                alt={currentQ.meaningTh}
+                style={{
+                  maxHeight: '100%',
+                  maxWidth: '100%',
+                  objectFit: 'contain',
+                  borderRadius: 'var(--radius-md)'
+                }}
+              />
+            ) : (
+              <div style={{ color: 'var(--text-muted)' }}>ไม่มีรูปภาพ</div>
+            )}
           </div>
 
-          {/* Teacher Question Prompt */}
+          {/* Teacher Question Prompt (Strictly Romaji like the PDF exam slide) */}
           <div style={{ width: '100%', padding: '16px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-subtle)', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <Compass size={18} color="var(--primary-600)" />
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>คำถามจากอาจารย์ผู้คุมสอบ:</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)' }}>อาจารย์ชี้ภาพสถานที่แล้วถามว่า:</span>
             </div>
-            <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.02em' }}>
-              "{currentQ.promptJp}"
-            </p>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              ({currentQ.promptTh})
+            <p style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '0.02em', margin: 0 }}>
+              "{currentQ.promptRomaji || currentQ.promptJp}"
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
-              onClick={() => playJapaneseAudio(currentQ.promptJp)}
+              onClick={() => playJapaneseAudio(currentQ.promptRomaji || currentQ.promptJp)}
               className="btn-outline"
               style={{ padding: '8px 16px', fontSize: '13px' }}
             >
