@@ -15,7 +15,9 @@ import {
   Sparkles,
   Plus,
   Trash2,
-  Edit2
+  Edit2,
+  Download,
+  Upload
 } from 'lucide-react';
 import {
   exam2VocabList,
@@ -739,6 +741,46 @@ export const Exam2PresetManagerModal: React.FC<Exam2PresetManagerModalProps> = (
     onSelectPreset(savedPreset.id);
   };
 
+  const handleExportPresets = () => {
+    if (customPresets.length === 0) {
+      alert('ยังไม่มีชุดพรีเซ็ตที่คุณสร้างเองเพื่อส่งออกครับ คุณสามารถกด "สร้างชุดฝึกซ้อมใหม่" ก่อนได้ครับ');
+      return;
+    }
+    const dataStr = JSON.stringify(customPresets, null, 2);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(dataStr);
+    }
+    alert(`คัดลอกข้อมูลพรีเซ็ตที่คุณสร้างทั้ง ${customPresets.length} ชุดลงใน Clipboard เรียบร้อยแล้ว!\n\nคุณสามารถนำไปเปิดเว็บที่ Vercel (หรือเครื่องอื่น) แล้วกดปุ่ม "นำเข้า (Import)" เพื่อใช้งานได้ทันทีครับ`);
+  };
+
+  const handleImportPresets = () => {
+    const input = prompt('กรุณาวางโค้ด JSON ของชุดพรีเซ็ตที่ต้องการนำเข้า:');
+    if (!input || !input.trim()) return;
+    try {
+      const parsed = JSON.parse(input);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const valid = parsed.filter((p: any) => p && p.id && p.name);
+        if (valid.length === 0) {
+          alert('ไม่พบชุดพรีเซ็ตที่ถูกต้องในข้อมูล');
+          return;
+        }
+        const existingIds = new Set(customPresets.map((p) => p.id));
+        const newToAdd: Exam2PracticePreset[] = valid.map((p: any) => ({
+          ...p,
+          id: existingIds.has(p.id) ? `preset_e2_imported_${Date.now()}_${Math.random().toString(36).substring(2, 6)}` : p.id,
+          isCustom: true,
+        }));
+        const updated = [...customPresets, ...newToAdd];
+        onSaveCustomPresets(updated);
+        alert(`นำเข้าชุดฝึกซ้อมสำเร็จ ${newToAdd.length} ชุดเรียบร้อยแล้ว!`);
+      } else {
+        alert('รูปแบบข้อมูลไม่ถูกต้อง (ต้องเป็นรายการ JSON Array)');
+      }
+    } catch {
+      alert('ข้อมูล JSON ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -795,18 +837,38 @@ export const Exam2PresetManagerModal: React.FC<Exam2PresetManagerModalProps> = (
 
           {/* List of Presets */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
               <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-main)' }}>
                 รายการชุดฝึกซ้อมทั้งหมด ({allPresets.length} ชุด)
               </span>
-              <button
-                type="button"
-                onClick={handleCreateNew}
-                className="btn btn-primary"
-                style={{ padding: '7px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Plus size={15} /> สร้างชุดฝึกซ้อมใหม่
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleExportPresets}
+                  className="btn btn-secondary"
+                  title="คัดลอกข้อมูลพรีเซ็ตที่คุณสร้างทั้งหมดไปวางบน Vercel หรือเครื่องอื่น"
+                  style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <Download size={14} /> ส่งออก (Export)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportPresets}
+                  className="btn btn-secondary"
+                  title="นำเข้าพรีเซ็ตจากเครื่องอื่นหรือ Vercel"
+                  style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <Upload size={14} /> นำเข้า (Import)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateNew}
+                  className="btn btn-primary"
+                  style={{ padding: '7px 14px', fontSize: '12.5px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={15} /> สร้างชุดฝึกซ้อมใหม่
+                </button>
+              </div>
             </div>
 
             {allPresets.map((preset) => {

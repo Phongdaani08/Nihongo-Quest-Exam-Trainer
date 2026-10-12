@@ -72,7 +72,10 @@ export const MockExamSimulator: React.FC<MockExamProps> = ({ initialMode = 'time
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const customOnly = parsed.filter((p: CustomPracticePreset) => p.isCustom);
+          return [...defaultPresets, ...customOnly];
+        }
       } catch (e) {
         console.error('Failed to parse custom presets', e);
       }

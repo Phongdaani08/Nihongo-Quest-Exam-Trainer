@@ -53,8 +53,16 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
   const [presets, setPresets] = useState<Exam2PracticePreset[]>(() => {
     try {
       const saved = localStorage.getItem('nihongo_exam2_custom_presets');
-      return saved ? JSON.parse(saved) : defaultExam2Presets;
-    } catch (e) {
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Always keep latest default presets from code + user custom presets
+          const customOnly = parsed.filter((p: Exam2PracticePreset) => p.isCustom);
+          return [...defaultExam2Presets, ...customOnly];
+        }
+      }
+      return defaultExam2Presets;
+    } catch {
       return defaultExam2Presets;
     }
   });
