@@ -1,5 +1,12 @@
 import { Vocabulary } from '../types';
 
+export interface Exam2Option {
+  textRomaji: string;
+  textKana: string;
+  meaningTh: string;
+  isCorrect: boolean;
+}
+
 export interface Exam2QuestionItem {
   id: string;
   patternId: 1 | 2 | 3 | 4 | 5;
@@ -12,12 +19,7 @@ export interface Exam2QuestionItem {
   targetAnswerRomaji: string;
   targetAnswerKana: string;
   meaningTh: string;
-  options: {
-    textRomaji: string;
-    textKana: string;
-    meaningTh: string;
-    isCorrect: boolean;
-  }[];
+  options: Exam2Option[];
   visualType: 'location' | 'clock' | 'phone' | 'price' | 'schedule';
   visualData: any;
   explanationTh: string;
@@ -477,248 +479,204 @@ export const exam2LocationQuestions: Exam2QuestionItem[] = [
 ];
 
 // Pattern 2: Telling Time (Ima nan ji desuka?)
-export const exam2ClockQuestions: Exam2QuestionItem[] = [
-  {
-    id: 'e2_p2_01',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (16.30 น.)',
-    targetAnswerRomaji: 'Ima gogo yo-ji han desu.',
-    targetAnswerKana: 'いま ごご よじ はん です。',
-    meaningTh: 'ตอนนี้ บ่าย 4 โมงครึ่ง ครับ/ค่ะ (16.30 น.)',
-    options: [
-      { textRomaji: 'Ima gogo yo-ji han desu.', textKana: 'いま ごご よじ はん です。', meaningTh: 'ตอนนี้ บ่าย 4 โมงครึ่ง (ถูกต้องตามสไลด์ข้อสอบ)', isCorrect: true },
-      { textRomaji: 'Ima gozen yo-ji han desu.', textKana: 'いま ごぜん よじ はん です。', meaningTh: 'gozen (ผิด 16.30 น. คือช่วงบ่าย-เย็น gogo)', isCorrect: false },
-      { textRomaji: 'Ima gogo yon-ji han desu.', textKana: 'いま ごご よんじ はん です。', meaningTh: 'yon-ji (ผิด 4 โมงต้อง yo-ji)', isCorrect: false },
-      { textRomaji: 'Ima gogo shi-ji han desu.', textKana: 'いま ごご しじ はん です。', meaningTh: 'shi-ji (ผิด 4 โมงต้อง yo-ji)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 16, minute: 30, period: 'gogo', display: '16.30', timeDisplay: '16.30 น.', timeString: '16:30', isSpecial: true },
-    explanationTh: '⭐ ตัวอย่างสไลด์ข้อสอบจริงหน้า 6: 16.30 น. (ช่วงบ่าย-เย็น) ต้องตอบ "Ima gogo yo-ji han desu." (4 โมงยกเว้นเสียงเป็น yo-ji และ 30 นาทีคือ han)',
-  },
-  {
-    id: 'e2_p2_02',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (09.45 น.)',
-    targetAnswerRomaji: 'Ima gozen ku-ji yonjū gofun desu.',
-    targetAnswerKana: 'いま ごぜん くじ よんじゅうごふん です。',
-    meaningTh: 'ตอนนี้ 9 โมงเช้า 45 นาที ครับ/ค่ะ (09.45 น.)',
-    options: [
-      { textRomaji: 'Ima gozen ku-ji yonjū gofun desu.', textKana: 'いま ごぜん くじ よんじゅうごふん です。', meaningTh: 'ตอนนี้ 9 โมงเช้า 45 นาที (ถูกต้องตามสไลด์ข้อสอบ)', isCorrect: true },
-      { textRomaji: 'Ima gogo ku-ji yonjū gofun desu.', textKana: 'いま ごご くじ よんじゅうごふん です。', meaningTh: 'gogo (ผิด 09.45 น. คือช่วงเช้า gozen)', isCorrect: false },
-      { textRomaji: 'Ima gozen kyū-ji yonjū gofun desu.', textKana: 'いま ごぜん きゅうじ よんじゅうごふん です。', meaningTh: 'kyū-ji (ผิด 9 โมงต้อง ku-ji)', isCorrect: false },
-      { textRomaji: 'Ima gozen ku-ji yonjū gopun desu.', textKana: 'いま ごぜん くじ よんじゅうごぷん です。', meaningTh: 'gopun (ผิด 5 นาทีต้อง gofun)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 9, minute: 45, period: 'gozen', display: '09.45', timeDisplay: '09.45 น.', timeString: '09:45', isSpecial: true },
-    explanationTh: '⭐ ตัวอย่างสไลด์ข้อสอบจริงหน้า 6: 09.45 น. (ช่วงเช้า) ต้องตอบ "Ima gozen ku-ji yonjū gofun desu." (9 โมงยกเว้นเสียงเป็น ku-ji และ 45 นาทีคือ yonjū gofun)',
-  },
-  {
-    id: 'e2_p2_03',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (21.00 น.)',
-    targetAnswerRomaji: 'Ima gogo ku-ji desu.',
-    targetAnswerKana: 'いま ごご くじ です。',
-    meaningTh: 'ตอนนี้ 3 ทุ่ม (21.00 น.) ครับ/ค่ะ',
-    options: [
-      { textRomaji: 'Ima gogo ku-ji desu.', textKana: 'いま ごご くじ です。', meaningTh: 'ตอนนี้ 3 ทุ่ม (21.00 น.) ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gozen ku-ji desu.', textKana: 'いま ごぜん くじ です。', meaningTh: 'gozen (ผิด gozen ku-ji คือ 9 โมงเช้า)', isCorrect: false },
-      { textRomaji: 'Ima gogo kyū-ji desu.', textKana: 'いま ごご きゅうじ です。', meaningTh: 'kyū-ji (ผิด 9 โมงต้อง ku-ji)', isCorrect: false },
-      { textRomaji: 'Ima gogo nijūichi-ji desu.', textKana: 'いま ごご にじゅういちじ です。', meaningTh: 'nijūichi-ji (ผิด ในภาษาพูดใช้ระบบ 12 ชม.)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 21, minute: 0, period: 'gogo', display: '21.00', timeDisplay: '21.00 น.', timeString: '21:00', isSpecial: true },
-    explanationTh: '⭐ ตามสไลด์บทที่ 3 หน้า 48 ระบุ: Gogo ku-ji = 21.00 น. (3 ทุ่ม) และ 9 โมงต้อง ku-ji เท่านั้น',
-  },
-  {
-    id: 'e2_p2_04',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (09.00 น.)',
-    targetAnswerRomaji: 'Ima gozen ku-ji desu.',
-    targetAnswerKana: 'いま ごぜん くじ です。',
-    meaningTh: 'ตอนนี้ 9 โมงเช้า (09.00 น.) ครับ/ค่ะ',
-    options: [
-      { textRomaji: 'Ima gozen ku-ji desu.', textKana: 'いま ごぜん くじ です。', meaningTh: 'ตอนนี้ 9 โมงเช้า ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gogo ku-ji desu.', textKana: 'いま ごご くじ です。', meaningTh: 'gogo (ผิด gogo ku-ji คือ 21.00 น.)', isCorrect: false },
-      { textRomaji: 'Ima gozen kyū-ji desu.', textKana: 'いま ごぜん きゅうじ です。', meaningTh: 'kyū-ji (ผิด 9 โมงต้อง ku-ji)', isCorrect: false },
-      { textRomaji: 'Ima gozen ku-ji han desu.', textKana: 'いま ごぜん くじ はん です。', meaningTh: 'มี han เกินมา (นี่คือ 9 โมงตรง)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 9, minute: 0, period: 'gozen', display: '09.00', timeDisplay: '09.00 น.', timeString: '09:00', isSpecial: true },
-    explanationTh: '⭐ ตามสไลด์บทที่ 3 หน้า 48: Gozen ku-ji = 9 โมงเช้า',
-  },
-  {
-    id: 'e2_p2_05',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (14.06 น.)',
-    targetAnswerRomaji: 'Ima gogo ni-ji rop-pun desu.',
-    targetAnswerKana: 'いま ごご にじ ろっぷん です。',
-    meaningTh: 'ตอนนี้ บ่าย 2 โมง 6 นาที ครับ/ค่ะ (14.06 น.)',
-    options: [
-      { textRomaji: 'Ima gogo ni-ji rop-pun desu.', textKana: 'いま ごご にじ ろっぷん です。', meaningTh: 'ตอนนี้ บ่าย 2 โมง 6 นาที ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gozen ni-ji rop-pun desu.', textKana: 'いま ごぜん にじ ろっぷん です。', meaningTh: 'gozen (ผิด 14.06 น. คือช่วงบ่าย gogo)', isCorrect: false },
-      { textRomaji: 'Ima gogo ni-ji roku-fun desu.', textKana: 'いま ごご にじ ろくふん です。', meaningTh: 'roku-fun (ผิด 6 นาทีเป็นเสียงกัก rop-pun)', isCorrect: false },
-      { textRomaji: 'Ima gogo ni-ji roku-pun desu.', textKana: 'いま ごご にじ ろくぷん です。', meaningTh: 'roku-pun (ผิด)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 14, minute: 6, period: 'gogo', display: '14.06', timeDisplay: '14.06 น.', timeString: '14:06', isSpecial: true },
-    explanationTh: '⭐ 14.06 น. ช่วงบ่ายใช้ "gogo ni-ji" และ 6 นาทีเป็นเสียงกัก "rop-pun" (ろっぷん)',
-  },
-  {
-    id: 'e2_p2_06',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (04.00 น.)',
-    targetAnswerRomaji: 'Ima gozen yo-ji desu.',
-    targetAnswerKana: 'いま ごぜん よじ です。',
-    meaningTh: 'ตอนนี้ ตี 4 (04.00 น.) ครับ/ค่ะ',
-    options: [
-      { textRomaji: 'Ima gozen yo-ji desu.', textKana: 'いま ごぜん よじ です。', meaningTh: 'ตอนนี้ ตี 4 ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gogo yo-ji desu.', textKana: 'いま ごご よじ です。', meaningTh: 'gogo (ผิด gogo yo-ji คือ บ่าย 4 โมง)', isCorrect: false },
-      { textRomaji: 'Ima gozen yon-ji desu.', textKana: 'いま ごぜん よんじ です。', meaningTh: 'yon-ji (ผิด 4 โมงต้อง yo-ji)', isCorrect: false },
-      { textRomaji: 'Ima gozen shi-ji desu.', textKana: 'いま ごぜん しじ です。', meaningTh: 'shi-ji (ผิด 4 โมงต้อง yo-ji)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 4, minute: 0, period: 'gozen', display: '04.00', timeDisplay: '04.00 น.', timeString: '04:00', isSpecial: true },
-    explanationTh: '⭐ 04.00 น. ช่วงเช้าตรู่ = gozen และ 4 โมงยกเว้นเสียงเป็น "yo-ji"',
-  },
-  {
-    id: 'e2_p2_07',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (16.00 น.)',
-    targetAnswerRomaji: 'Ima gogo yo-ji desu.',
-    targetAnswerKana: 'いま ごご よじ です。',
-    meaningTh: 'ตอนนี้ บ่าย 4 โมง (16.00 น.) ครับ/ค่ะ',
-    options: [
-      { textRomaji: 'Ima gogo yo-ji desu.', textKana: 'いま ごご よじ です。', meaningTh: 'ตอนนี้ บ่าย 4 โมง ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gozen yo-ji desu.', textKana: 'いま ごぜん よじ です。', meaningTh: 'gozen (ผิด gozen yo-ji คือ ตี 4)', isCorrect: false },
-      { textRomaji: 'Ima gogo yon-ji desu.', textKana: 'いま ごご よんじ です。', meaningTh: 'yon-ji (ผิด 4 โมงต้อง yo-ji)', isCorrect: false },
-      { textRomaji: 'Ima gogo jūroku-ji desu.', textKana: 'いま ごご じゅうろくじ です。', meaningTh: 'jūroku-ji (ภาษาพูดนิยม 12 ชม.)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 16, minute: 0, period: 'gogo', display: '16.00', timeDisplay: '16.00 น.', timeString: '16:00', isSpecial: true },
-    explanationTh: '⭐ 16.00 น. ช่วงบ่าย-เย็น = gogo yo-ji desu.',
-  },
-  {
-    id: 'e2_p2_08',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (07.15 น.)',
-    targetAnswerRomaji: 'Ima gozen shichi-ji jūgo-fun desu.',
-    targetAnswerKana: 'いま ごぜん しちじ じゅうごふん です。',
-    meaningTh: 'ตอนนี้ 7 โมงเช้า 15 นาที ครับ/ค่ะ (07.15 น.)',
-    options: [
-      { textRomaji: 'Ima gozen shichi-ji jūgo-fun desu.', textKana: 'いま ごぜん しちじ じゅうごふん です。', meaningTh: 'ตอนนี้ 7 โมงเช้า 15 นาที ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gogo shichi-ji jūgo-fun desu.', textKana: 'いま ごご しちじ じゅうごふん です。', meaningTh: 'gogo (ผิด 07.15 น. คือช่วงเช้า gozen)', isCorrect: false },
-      { textRomaji: 'Ima gozen nana-ji jūgo-fun desu.', textKana: 'いま ごぜん ななじ じゅうごふん です。', meaningTh: 'nana-ji (บอกเวลานิยม shichi-ji)', isCorrect: false },
-      { textRomaji: 'Ima gozen shichi-ji jūgo-pun desu.', textKana: 'いま ごぜん しちじ じゅうごぷん です。', meaningTh: 'jūgo-pun (ผิด 5 นาทีต้อง fun)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 7, minute: 15, period: 'gozen', display: '07.15', timeDisplay: '07.15 น.', timeString: '07:15', isSpecial: false },
-    explanationTh: '07.15 น. ช่วงเช้า = gozen, 7 โมงนิยม "shichi-ji", 15 นาทีคือ "jūgo-fun"',
-  },
-  {
-    id: 'e2_p2_09',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (10.10 น.)',
-    targetAnswerRomaji: 'Ima gozen jū-ji jup-pun desu.',
-    targetAnswerKana: 'いま ごぜん じゅうじ じゅっぷん です。',
-    meaningTh: 'ตอนนี้ 10 โมง 10 นาที ครับ/ค่ะ (10.10 น.)',
-    options: [
-      { textRomaji: 'Ima gozen jū-ji jup-pun desu.', textKana: 'いま ごぜん じゅうじ じゅっぷん です。', meaningTh: 'ตอนนี้ 10 โมง 10 นาที ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gogo jū-ji jup-pun desu.', textKana: 'いま ごご じゅうじ じゅっぷん です。', meaningTh: 'gogo (ผิด 10.10 น. คือช่วงเช้า gozen)', isCorrect: false },
-      { textRomaji: 'Ima gozen jū-ji jū-fun desu.', textKana: 'いま ごぜん じゅうじ じゅうふん です。', meaningTh: 'jū-fun (ผิด 10 นาทีต้องเสียงกัก jup-pun)', isCorrect: false },
-      { textRomaji: 'Ima gozen jū-ji to-fun desu.', textKana: 'いま ごぜん じゅうじ とふん です。', meaningTh: 'to-fun (ผิด)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 10, minute: 10, period: 'gozen', display: '10.10', timeDisplay: '10.10 น.', timeString: '10:10', isSpecial: true },
-    explanationTh: '10.10 น. = gozen jū-ji และ 10 นาทีเป็นเสียงกัก "jup-pun" (じゅっぷん)',
-  },
-  {
-    id: 'e2_p2_10',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (19.30 น.)',
-    targetAnswerRomaji: 'Ima gogo shichi-ji han desu.',
-    targetAnswerKana: 'いま ごご しちじ はん です。',
-    meaningTh: 'ตอนนี้ ทุ่มครึ่ง (19.30 น.) ครับ/ค่ะ',
-    options: [
-      { textRomaji: 'Ima gogo shichi-ji han desu.', textKana: 'いま ごご しちじ はん です。', meaningTh: 'ตอนนี้ ทุ่มครึ่ง ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gozen shichi-ji han desu.', textKana: 'いま ごぜん しちじ はん です。', meaningTh: 'gozen (ผิด 19.30 น. คือช่วงค่ำ gogo)', isCorrect: false },
-      { textRomaji: 'Ima gogo nana-ji han desu.', textKana: 'いま ごご ななじ はん です。', meaningTh: 'nana-ji (บอกเวลานิยม shichi-ji)', isCorrect: false },
-      { textRomaji: 'Ima gogo shichi-ji sanjū-fun desu.', textKana: 'いま ごご しちじ さんじゅうふん です。', meaningTh: 'sanjū-fun (ผิด 30 นาทีต้อง han หรือ sanjuppun)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 19, minute: 30, period: 'gogo', display: '19.30', timeDisplay: '19.30 น.', timeString: '19:30', isSpecial: true },
-    explanationTh: '19.30 น. ช่วงค่ำ = gogo shichi-ji และ 30 นาทีใช้ "han"',
-  },
-  {
-    id: 'e2_p2_11',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (08.30 น.)',
-    targetAnswerRomaji: 'Ima gozen hachi-ji han desu.',
-    targetAnswerKana: 'いま ごぜん はちじ はん です。',
-    meaningTh: 'ตอนนี้ 8 โมงครึ่ง (08.30 น.) ครับ/ค่ะ',
-    options: [
-      { textRomaji: 'Ima gozen hachi-ji han desu.', textKana: 'いま ごぜん はちじ はん です。', meaningTh: 'ตอนนี้ 8 โมงครึ่ง ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gogo hachi-ji han desu.', textKana: 'いま ごご はちじ はん です。', meaningTh: 'gogo (ผิด 08.30 น. คือช่วงเช้า gozen)', isCorrect: false },
-      { textRomaji: 'Ima gozen hachi-ji sanjū-fun desu.', textKana: 'いま ごぜん はちじ さんじゅうふん です。', meaningTh: 'sanjū-fun (30 นาทีควรใช้ han)', isCorrect: false },
-      { textRomaji: 'Ima gozen ku-ji han desu.', textKana: 'いま ごぜん くじ はん です。', meaningTh: 'ku-ji (ผิดเวลา)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 8, minute: 30, period: 'gozen', display: '08.30', timeDisplay: '08.30 น.', timeString: '08:30', isSpecial: false },
-    explanationTh: '08.30 น. ช่วงเช้า = gozen hachi-ji han desu.',
-  },
-  {
-    id: 'e2_p2_12',
-    patternId: 2,
-    patternTitle: '2. บอกเวลา (Telling Time)',
-    promptRomaji: 'Ima nan ji desuka?',
-    promptJp: 'いま なんじ ですか。',
-    promptTh: 'อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (13.00 น.)',
-    targetAnswerRomaji: 'Ima gogo ichi-ji desu.',
-    targetAnswerKana: 'いま ごご いちじ です。',
-    meaningTh: 'ตอนนี้ บ่ายโมง (13.00 น.) ครับ/ค่ะ',
-    options: [
-      { textRomaji: 'Ima gogo ichi-ji desu.', textKana: 'いま ごご いちじ です。', meaningTh: 'ตอนนี้ บ่ายโมง ถูกต้อง', isCorrect: true },
-      { textRomaji: 'Ima gozen ichi-ji desu.', textKana: 'いま ごぜん いちじ です。', meaningTh: 'gozen (ผิด gozen ichi-ji คือ ตี 1)', isCorrect: false },
-      { textRomaji: 'Ima gogo jūsan-ji desu.', textKana: 'いま ごご じゅうさんじ です。', meaningTh: 'jūsan-ji (ภาษาพูดนิยมระบบ 12 ชม.)', isCorrect: false },
-      { textRomaji: 'Ima gogo ni-ji desu.', textKana: 'いま ごご にじ です。', meaningTh: 'ni-ji (ผิดเวลา)', isCorrect: false },
-    ],
-    visualType: 'clock',
-    visualData: { hour: 13, minute: 0, period: 'gogo', display: '13.00', timeDisplay: '13.00 น.', timeString: '13:00', isSpecial: false },
-    explanationTh: '13.00 น. ช่วงบ่าย = gogo ichi-ji desu. (บ่ายโมงตรง)',
-  },
-];
+// Comprehensive 24-hour generator covering all 5-minute intervals on earth (00:00 to 23:55 = 288 questions)
+function generateAllClockQuestions(): Exam2QuestionItem[] {
+  interface HourDef {
+    romaji: string;
+    kana: string;
+    thai: string;
+    distractorHourRomaji: string;
+    distractorHourKana: string;
+    distractorNote: string;
+    isSpecial?: boolean;
+  }
+
+  interface MinuteDef {
+    romaji: string;
+    kana: string;
+    thai: string;
+    distractorMinuteRomaji: string;
+    distractorMinuteKana: string;
+    distractorNote: string;
+    isSpecial?: boolean;
+  }
+
+  const hourData: Record<number, HourDef> = {
+    1: { romaji: 'ichi-ji', kana: 'いちじ', thai: '1 โมง', distractorHourRomaji: 'ni-ji', distractorHourKana: 'にじ', distractorNote: 'ni-ji (ผิดชั่วโมง)' },
+    2: { romaji: 'ni-ji', kana: 'にじ', thai: '2 โมง', distractorHourRomaji: 'san-ji', distractorHourKana: 'さんじ', distractorNote: 'san-ji (ผิดชั่วโมง)' },
+    3: { romaji: 'san-ji', kana: 'さんじ', thai: '3 โมง', distractorHourRomaji: 'yo-ji', distractorHourKana: 'よじ', distractorNote: 'yo-ji (ผิดชั่วโมง)' },
+    4: { romaji: 'yo-ji', kana: 'よじ', thai: '4 โมง', distractorHourRomaji: 'yon-ji', distractorHourKana: 'よんじ', distractorNote: 'yon-ji (ผิด 4 โมงต้อง yo-ji ห้ามใช้ yon-ji หรือ shi-ji)', isSpecial: true },
+    5: { romaji: 'go-ji', kana: 'ごじ', thai: '5 โมง', distractorHourRomaji: 'roku-ji', distractorHourKana: 'ろくじ', distractorNote: 'roku-ji (ผิดชั่วโมง)' },
+    6: { romaji: 'roku-ji', kana: 'ろくじ', thai: '6 โมง', distractorHourRomaji: 'shichi-ji', distractorHourKana: 'しちじ', distractorNote: 'shichi-ji (ผิดชั่วโมง)' },
+    7: { romaji: 'shichi-ji', kana: 'しちじ', thai: '7 โมง', distractorHourRomaji: 'nana-ji', distractorHourKana: 'ななじ', distractorNote: 'nana-ji (ผิด บอกเวลานิยม shichi-ji)', isSpecial: true },
+    8: { romaji: 'hachi-ji', kana: 'はちじ', thai: '8 โมง', distractorHourRomaji: 'ku-ji', distractorHourKana: 'くじ', distractorNote: 'ku-ji (ผิดชั่วโมง)' },
+    9: { romaji: 'ku-ji', kana: 'くじ', thai: '9 โมง', distractorHourRomaji: 'kyū-ji', distractorHourKana: 'きゅうじ', distractorNote: 'kyū-ji (ผิด 9 โมงต้อง ku-ji ห้ามใช้ kyū-ji)', isSpecial: true },
+    10: { romaji: 'jū-ji', kana: 'じゅうじ', thai: '10 โมง', distractorHourRomaji: 'jūichi-ji', distractorHourKana: 'じゅういちじ', distractorNote: 'jūichi-ji (ผิดชั่วโมง)' },
+    11: { romaji: 'jūichi-ji', kana: 'じゅういちじ', thai: '11 โมง', distractorHourRomaji: 'jūni-ji', distractorHourKana: 'じゅうにじ', distractorNote: 'jūni-ji (ผิดชั่วโมง)' },
+    12: { romaji: 'jūni-ji', kana: 'じゅうにじ', thai: '12 โมง', distractorHourRomaji: 'ichi-ji', distractorHourKana: 'いちじ', distractorNote: 'ichi-ji (ผิดชั่วโมง)' },
+  };
+
+  const minuteData: Record<number, MinuteDef> = {
+    0: { romaji: '', kana: '', thai: 'ตรง', distractorMinuteRomaji: 'han', distractorMinuteKana: 'はん', distractorNote: 'มี han เกินมา (นี่คือเวลาตรง)' },
+    5: { romaji: 'go-fun', kana: 'ごふん', thai: '5 นาที', distractorMinuteRomaji: 'go-pun', distractorMinuteKana: 'ごぷん', distractorNote: 'go-pun (ผิด 5 นาทีต้อง fun)' },
+    10: { romaji: 'jup-pun', kana: 'じゅっぷん', thai: '10 นาที', distractorMinuteRomaji: 'jū-fun', distractorMinuteKana: 'じゅうふん', distractorNote: 'jū-fun (ผิด 10 นาทีเป็นเสียงกัก jup-pun)', isSpecial: true },
+    15: { romaji: 'jūgo-fun', kana: 'じゅうごふん', thai: '15 นาที', distractorMinuteRomaji: 'jūgo-pun', distractorMinuteKana: 'じゅうごぷん', distractorNote: 'jūgo-pun (ผิด 15 นาทีต้อง fun)' },
+    20: { romaji: 'nijup-pun', kana: 'にじゅっぷん', thai: '20 นาที', distractorMinuteRomaji: 'nijū-fun', distractorMinuteKana: 'にじゅうふん', distractorNote: 'nijū-fun (ผิด 20 นาทีเป็นเสียงกัก nijup-pun)', isSpecial: true },
+    25: { romaji: 'nijūgo-fun', kana: 'にじゅうごふん', thai: '25 นาที', distractorMinuteRomaji: 'nijūgo-pun', distractorMinuteKana: 'にじゅうごぷん', distractorNote: 'nijūgo-pun (ผิด 25 นาทีต้อง fun)' },
+    30: { romaji: 'han', kana: 'はん', thai: '30 นาที (ครึ่ง)', distractorMinuteRomaji: 'sanjū-fun', distractorMinuteKana: 'さんじゅうふん', distractorNote: 'sanjū-fun (ผิด 30 นาทีต้องใช้ han)', isSpecial: true },
+    35: { romaji: 'sanjūgo-fun', kana: 'さんじゅうごふん', thai: '35 นาที', distractorMinuteRomaji: 'sanjūgo-pun', distractorMinuteKana: 'さんじゅうごぷん', distractorNote: 'sanjūgo-pun (ผิด 35 นาทีต้อง fun)' },
+    40: { romaji: 'yonjup-pun', kana: 'よんじゅっぷん', thai: '40 นาที', distractorMinuteRomaji: 'yonjū-fun', distractorMinuteKana: 'よんじゅうふん', distractorNote: 'yonjū-fun (ผิด 40 นาทีเป็นเสียงกัก yonjup-pun)', isSpecial: true },
+    45: { romaji: 'yonjū gofun', kana: 'よんじゅうごふん', thai: '45 นาที', distractorMinuteRomaji: 'yonjū gopun', distractorMinuteKana: 'よんじゅうごぷん', distractorNote: 'yonjū gopun (ผิด 45 นาทีต้อง gofun)' },
+    50: { romaji: 'gojup-pun', kana: 'ごじゅっぷん', thai: '50 นาที', distractorMinuteRomaji: 'gojū-fun', distractorMinuteKana: 'ごじゅうふん', distractorNote: 'gojū-fun (ผิด 50 นาทีเป็นเสียงกัก gojup-pun)', isSpecial: true },
+    55: { romaji: 'gojūgo-fun', kana: 'ごじゅうごふん', thai: '55 นาที', distractorMinuteRomaji: 'gojūgo-pun', distractorMinuteKana: 'ごじゅうごぷん', distractorNote: 'gojūgo-pun (ผิด 55 นาทีต้อง fun)' },
+  };
+
+  const getThaiTime = (h24: number, m: number): string => {
+    let base = '';
+    if (h24 === 0) base = 'เที่ยงคืน';
+    else if (h24 >= 1 && h24 <= 5) base = `ตี ${h24}`;
+    else if (h24 >= 6 && h24 <= 11) base = `${h24} โมงเช้า`;
+    else if (h24 === 12) base = 'เที่ยงวัน';
+    else if (h24 === 13) base = 'บ่ายโมง';
+    else if (h24 >= 14 && h24 <= 15) base = `บ่าย ${h24 - 12} โมง`;
+    else if (h24 === 16) base = 'บ่าย 4 โมง (16.00 น.)';
+    else if (h24 >= 17 && h24 <= 18) base = `${h24 - 12} โมงเย็น`;
+    else base = `${h24 - 18} ทุ่ม`;
+
+    if (m === 0) return `${base}ตรง`;
+    if (m === 30) return `${base}ครึ่ง`;
+    return `${base} ${m} นาที`;
+  };
+
+  const shuffle = <T>(arr: T[], seed: number): T[] => {
+    const res = [...arr];
+    for (let i = res.length - 1; i > 0; i--) {
+      seed = (seed * 9301 + 49297) % 233280;
+      const j = Math.floor((seed / 233280) * (i + 1));
+      [res[i], res[j]] = [res[j], res[i]];
+    }
+    return res;
+  };
+
+  const items: Exam2QuestionItem[] = [];
+  let idCount = 1;
+
+  for (const period of ['gozen', 'gogo'] as const) {
+    const isGozen = period === 'gozen';
+    const periodKana = isGozen ? 'ごぜん' : 'ごご';
+    const oppPeriod = isGozen ? 'gogo' : 'gozen';
+    const oppPeriodKana = isGozen ? 'ごご' : 'ごぜん';
+
+    for (let h = 1; h <= 12; h++) {
+      for (let m = 0; m < 60; m += 5) {
+        const hObj = hourData[h];
+        const mObj = minuteData[m];
+
+        let h24: number;
+        if (isGozen) {
+          h24 = h === 12 ? 0 : h;
+        } else {
+          h24 = h === 12 ? 12 : h + 12;
+        }
+
+        const hhStr = String(h24).padStart(2, '0');
+        const mmStr = String(m).padStart(2, '0');
+        const display = `${hhStr}.${mmStr}`;
+        const timeDisplay = `${display} น.`;
+        const timeString = `${hhStr}:${mmStr}`;
+        const thaiDesc = getThaiTime(h24, m);
+
+        const timePartRomaji = mObj.romaji ? `${hObj.romaji} ${mObj.romaji}` : hObj.romaji;
+        const timePartKana = mObj.kana ? `${hObj.kana} ${mObj.kana}` : hObj.kana;
+
+        const targetRomaji = `Ima ${period} ${timePartRomaji} desu.`;
+        const targetKana = `いま ${periodKana} ${timePartKana} です。`;
+
+        const optCorrect: Exam2Option = {
+          textRomaji: targetRomaji,
+          textKana: targetKana,
+          meaningTh: `ตอนนี้ ${thaiDesc} (${timeDisplay}) ถูกต้อง`,
+          isCorrect: true,
+        };
+
+        const optWrongPeriod: Exam2Option = {
+          textRomaji: `Ima ${oppPeriod} ${timePartRomaji} desu.`,
+          textKana: `いま ${oppPeriodKana} ${timePartKana} です。`,
+          meaningTh: `${oppPeriod} (ผิด ${timeDisplay} คือช่วง ${isGozen ? 'เช้า gozen' : 'บ่าย-ค่ำ gogo'})`,
+          isCorrect: false,
+        };
+
+        const d2HourRomaji = mObj.romaji ? `${hObj.distractorHourRomaji} ${mObj.romaji}` : hObj.distractorHourRomaji;
+        const d2HourKana = mObj.kana ? `${hObj.distractorHourKana} ${mObj.kana}` : hObj.distractorHourKana;
+        const optWrongHour: Exam2Option = {
+          textRomaji: `Ima ${period} ${d2HourRomaji} desu.`,
+          textKana: `いま ${periodKana} ${d2HourKana} です。`,
+          meaningTh: hObj.distractorNote,
+          isCorrect: false,
+        };
+
+        const d3MinuteRomaji = `${hObj.romaji} ${mObj.distractorMinuteRomaji}`.trim();
+        const d3MinuteKana = `${hObj.kana} ${mObj.distractorMinuteKana}`.trim();
+        const optWrongMinute: Exam2Option = {
+          textRomaji: `Ima ${period} ${d3MinuteRomaji} desu.`,
+          textKana: `いま ${periodKana} ${d3MinuteKana} です。`,
+          meaningTh: mObj.distractorNote,
+          isCorrect: false,
+        };
+
+        const seed = (isGozen ? 0 : 500) + h * 20 + m;
+        const options = shuffle([optCorrect, optWrongPeriod, optWrongHour, optWrongMinute], seed);
+
+        let explanation = `เวลา ${timeDisplay} (${thaiDesc}): ใช้ "${period}" ตามด้วยชั่วโมง "${hObj.romaji}"`;
+        if (mObj.romaji) explanation += ` และนาที "${mObj.romaji}"`;
+        explanation += ` → "${targetRomaji}"`;
+
+        if (timeDisplay === '16.30 น.') {
+          explanation = '⭐ ตัวอย่างสไลด์ข้อสอบจริงหน้า 6: 16.30 น. (ช่วงบ่าย-เย็น) ต้องตอบ "Ima gogo yo-ji han desu." (4 โมงยกเว้นเสียงเป็น yo-ji และ 30 นาทีคือ han)';
+        } else if (timeDisplay === '09.45 น.') {
+          explanation = '⭐ ตัวอย่างสไลด์ข้อสอบจริงหน้า 6: 09.45 น. (ช่วงเช้า) ต้องตอบ "Ima gozen ku-ji yonjū gofun desu." (9 โมงยกเว้นเสียงเป็น ku-ji และ 45 นาทีคือ yonjū gofun)';
+        } else if (timeDisplay === '21.00 น.') {
+          explanation = '⭐ ตามสไลด์บทที่ 3 หน้า 48 ระบุ: Gogo ku-ji = 21.00 น. (3 ทุ่ม) และ 9 โมงต้อง ku-ji เท่านั้น';
+        } else if (timeDisplay === '09.00 น.') {
+          explanation = '⭐ ตามสไลด์บทที่ 3 หน้า 48: Gozen ku-ji = 09.00 น. (9 โมงเช้า)';
+        }
+
+        const id = `e2_p2_${String(idCount++).padStart(3, '0')}`;
+        items.push({
+          id,
+          patternId: 2,
+          patternTitle: '2. บอกเวลา (Telling Time)',
+          promptRomaji: 'Ima nan ji desuka?',
+          promptJp: 'いま なんじ ですか。',
+          promptTh: `อาจารย์ถามเวลาจากป้าย/หน้าจอข้อสอบ (${timeDisplay})`,
+          targetAnswerRomaji: targetRomaji,
+          targetAnswerKana: targetKana,
+          meaningTh: `ตอนนี้ ${thaiDesc} (${timeDisplay}) ครับ/ค่ะ`,
+          options,
+          visualType: 'clock',
+          visualData: {
+            hour: h24,
+            minute: m,
+            period,
+            display,
+            timeDisplay,
+            timeString,
+            isSpecial: Boolean(hObj.isSpecial || mObj.isSpecial || timeDisplay === '16.30 น.' || timeDisplay === '09.45 น.'),
+          },
+          explanationTh: explanation,
+        });
+      }
+    }
+  }
+
+  // Put 16.30 and 09.45 first for instant recognition with slide 6
+  const p6_1 = items.find(q => q.visualData.timeDisplay === '16.30 น.');
+  const p6_2 = items.find(q => q.visualData.timeDisplay === '09.45 น.');
+  const rest = items.filter(q => q.visualData.timeDisplay !== '16.30 น.' && q.visualData.timeDisplay !== '09.45 น.');
+  return p6_1 && p6_2 ? [p6_1, p6_2, ...rest] : items;
+}
+
+export const exam2ClockQuestions: Exam2QuestionItem[] = generateAllClockQuestions();
 
 // Pattern 3: Phone Numbers (Anata no denwa bango wa nan desuka?)
 export const exam2PhoneQuestions: Exam2QuestionItem[] = [

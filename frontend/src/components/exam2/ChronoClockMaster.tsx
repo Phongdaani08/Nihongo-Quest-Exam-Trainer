@@ -10,13 +10,14 @@ import {
   Clock,
   ArrowRight,
   HelpCircle,
-  AlertTriangle
+  AlertTriangle,
+  Shuffle
 } from 'lucide-react';
 import { playJapaneseAudio } from '../../utils/speech';
 import { exam2ClockQuestions, Exam2QuestionItem } from '../../services/exam2Data';
 
 export const ChronoClockMaster: React.FC = () => {
-  const [questions] = useState<Exam2QuestionItem[]>(exam2ClockQuestions);
+  const [questions, setQuestions] = useState<Exam2QuestionItem[]>(exam2ClockQuestions);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
@@ -53,10 +54,18 @@ export const ChronoClockMaster: React.FC = () => {
   };
 
   const handleReset = () => {
+    setQuestions(exam2ClockQuestions);
     setSelectedOption(null);
     setIsAnswered(false);
     setCurrentIndex(0);
     setScore({ correct: 0, total: 0 });
+  };
+
+  const handleShuffle = () => {
+    setQuestions([...exam2ClockQuestions].sort(() => 0.5 - Math.random()));
+    setSelectedOption(null);
+    setIsAnswered(false);
+    setCurrentIndex(0);
   };
 
   return (
@@ -76,6 +85,15 @@ export const ChronoClockMaster: React.FC = () => {
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
+            onClick={handleShuffle}
+            className="btn-outline"
+            style={{ padding: '8px 14px', fontSize: '12px' }}
+            title="สุ่มลำดับข้อสอบจากคลังเวลา 288 ข้อ"
+          >
+            <Shuffle size={15} /> สุ่มข้อสอบ
+          </button>
+
+          <button
             onClick={() => setIsChoiceRevealed(prev => !prev)}
             className="btn-outline"
             style={{ padding: '8px 14px', fontSize: '12px' }}
@@ -92,9 +110,14 @@ export const ChronoClockMaster: React.FC = () => {
 
       {/* Irregular Time Cheat-Sheet Strip */}
       <div className="card" style={{ padding: '14px 20px', backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <AlertTriangle size={16} color="var(--warning-600)" />
-          <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>จุดระวังข้อยกเว้นออกสอบบ่อย (Irregularities & AM/PM):</strong>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertTriangle size={16} color="var(--warning-600)" />
+            <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>จุดระวังข้อยกเว้นออกสอบบ่อย (Irregularities & AM/PM):</strong>
+          </div>
+          <span className="badge badge-primary" style={{ fontSize: '11.5px', padding: '3px 10px' }}>
+            🌍 ครอบคลุม 288 ช่วงเวลาตลอด 24 ชั่วโมงบนโลก (ทีละ 5 นาที)
+          </span>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '12px' }}>
           <span className="badge" style={{ backgroundColor: 'var(--bg-surface)', border: '1.5px solid var(--primary-300)', color: 'var(--primary-700)' }}>
@@ -113,10 +136,13 @@ export const ChronoClockMaster: React.FC = () => {
             9 โมง: <strong style={{ color: 'var(--primary-700)' }}>ku-ji</strong> (ห้าม kyū-ji)
           </span>
           <span className="badge" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-strong)' }}>
-            30 นาที: <strong style={{ color: 'var(--primary-700)' }}>han</strong> หรือ <strong style={{ color: 'var(--primary-700)' }}>sanjup-pun</strong>
+            30 นาที: <strong style={{ color: 'var(--primary-700)' }}>han</strong>
           </span>
           <span className="badge" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-strong)' }}>
-            นาทีเสียงกัก (pun): <strong>1 (ip-pun), 3 (san-pun), 6 (rop-pun), 8 (hap-pun), 10 (jup-pun)</strong>
+            นาทีเสียงกัก (pun): <strong>10 (jup-pun), 20 (nijup-pun), 40 (yonjup-pun), 50 (gojup-pun)</strong>
+          </span>
+          <span className="badge" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-strong)' }}>
+            นาทีลงท้าย 5 (fun): <strong>5, 15, 25, 35, 45, 55 (-fun)</strong>
           </span>
         </div>
       </div>
