@@ -669,11 +669,13 @@ function generateAllClockQuestions(): Exam2QuestionItem[] {
     }
   }
 
-  // Put 16.30 and 09.45 first for instant recognition with slide 6
-  const p6_1 = items.find(q => q.visualData.timeDisplay === '16.30 น.');
-  const p6_2 = items.find(q => q.visualData.timeDisplay === '09.45 น.');
-  const rest = items.filter(q => q.visualData.timeDisplay !== '16.30 น.' && q.visualData.timeDisplay !== '09.45 น.');
-  return p6_1 && p6_2 ? [p6_1, p6_2, ...rest] : items;
+  // Fully shuffle all 288 clock questions across 24 hours using Fisher-Yates algorithm
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }
 
 export const exam2ClockQuestions: Exam2QuestionItem[] = generateAllClockQuestions();

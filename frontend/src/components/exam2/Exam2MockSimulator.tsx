@@ -33,6 +33,15 @@ import {
   Exam2PresetEditorModal
 } from './Exam2CustomPresetManagerModal';
 
+function shuffleArray<T>(list: T[]): T[] {
+  const result = [...list];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 interface Exam2MockProps {
   initialMode?: 'timed_3min' | 'endless_infinite';
 }
@@ -211,46 +220,46 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
 
     if (mode === 'timed_3min') {
       // Official Timed Exam: 5 Part 1 Vocab + 10 Part 2 Questions (2 from each pattern) = 15 total
-      const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+      const shuffledVocab = shuffleArray(vocabPool);
       pickedSec1 = shuffledVocab.slice(0, 5).map((v) => {
-        const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
-        const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+        const distractors = shuffleArray(exam2VocabList.filter((x) => x.id !== v.id)).slice(0, 3);
+        const opts = shuffleArray([v, ...distractors]);
         return { item: v, options: opts };
       });
 
-      const p1 = [...exam2LocationQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
-      const p2 = [...exam2ClockQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
-      const p3 = [...exam2PhoneQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
-      const p4 = [...exam2PriceQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
-      const p5 = [...exam2ScheduleQuestions].sort(() => 0.5 - Math.random()).slice(0, 2);
+      const p1 = shuffleArray(exam2LocationQuestions).slice(0, 2);
+      const p2 = shuffleArray(exam2ClockQuestions).slice(0, 2);
+      const p3 = shuffleArray(exam2PhoneQuestions).slice(0, 2);
+      const p4 = shuffleArray(exam2PriceQuestions).slice(0, 2);
+      const p5 = shuffleArray(exam2ScheduleQuestions).slice(0, 2);
       pickedSec2 = [...p1, ...p2, ...p3, ...p4, ...p5];
     } else {
       // Endless Infinite: Exact full count of words selected in the preset, randomly shuffled
       if (practiceScope === 'part1_only') {
-        const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+        const shuffledVocab = shuffleArray(vocabPool);
         const count = questionQuantity === 0 ? shuffledVocab.length : Math.min(questionQuantity, shuffledVocab.length);
         pickedSec1 = shuffledVocab.slice(0, count).map((v) => {
-          const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
-          const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+          const distractors = shuffleArray(exam2VocabList.filter((x) => x.id !== v.id)).slice(0, 3);
+          const opts = shuffleArray([v, ...distractors]);
           return { item: v, options: opts };
         });
         pickedSec2 = [];
       } else if (practiceScope === 'part2_only') {
-        const shuffledQuestions = [...questionsPool].sort(() => 0.5 - Math.random());
+        const shuffledQuestions = shuffleArray(questionsPool);
         const count = questionQuantity === 0 ? shuffledQuestions.length : Math.min(questionQuantity, shuffledQuestions.length);
         pickedSec1 = [];
         pickedSec2 = shuffledQuestions.slice(0, count);
       } else {
         // Both Part 1 & Part 2: All words in preset + All questions in preset
-        const shuffledVocab = [...vocabPool].sort(() => 0.5 - Math.random());
+        const shuffledVocab = shuffleArray(vocabPool);
         const sec1Count = questionQuantity === 0 ? shuffledVocab.length : Math.max(1, Math.round(questionQuantity / 3));
         pickedSec1 = shuffledVocab.slice(0, sec1Count).map((v) => {
-          const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
-          const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+          const distractors = shuffleArray(exam2VocabList.filter((x) => x.id !== v.id)).slice(0, 3);
+          const opts = shuffleArray([v, ...distractors]);
           return { item: v, options: opts };
         });
 
-        const shuffledQuestions = [...questionsPool].sort(() => 0.5 - Math.random());
+        const shuffledQuestions = shuffleArray(questionsPool);
         const sec2Count = questionQuantity === 0 ? shuffledQuestions.length : Math.max(1, questionQuantity - sec1Count);
         pickedSec2 = shuffledQuestions.slice(0, sec2Count);
       }
@@ -304,9 +313,9 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
             // Endless Continuous Loop: Reshuffle all words in preset and loop seamlessly forever!
             let vocabPool = exam2VocabList.filter((v) => activePreset.part1VocabIds.includes(v.id));
             if (vocabPool.length === 0) vocabPool = [...exam2VocabList];
-            const reshuffled = [...vocabPool].sort(() => 0.5 - Math.random()).map((v) => {
-              const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
-              const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+            const reshuffled = shuffleArray(vocabPool).map((v) => {
+              const distractors = shuffleArray(exam2VocabList.filter((x) => x.id !== v.id)).slice(0, 3);
+              const opts = shuffleArray([v, ...distractors]);
               return { item: v, options: opts };
             });
             setSec1Items(reshuffled);
@@ -369,7 +378,7 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
               return activePreset.part2PatternIds.includes(q.patternId);
             });
             if (questionsPool.length === 0) questionsPool = [...allExam2QuestionsPool];
-            const reshuffled = [...questionsPool].sort(() => 0.5 - Math.random());
+            const reshuffled = shuffleArray(questionsPool);
             setSec2Items(reshuffled);
             setSec2Index(0);
             setLoopRound((prev) => prev + 1);
@@ -377,14 +386,14 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
             // Both mode: Loop back to reshuffled Section 1
             let vocabPool = exam2VocabList.filter((v) => activePreset.part1VocabIds.includes(v.id));
             if (vocabPool.length === 0) vocabPool = [...exam2VocabList];
-            const reshuffledSec1 = [...vocabPool].sort(() => 0.5 - Math.random()).map((v) => {
-              const distractors = exam2VocabList.filter((x) => x.id !== v.id).sort(() => 0.5 - Math.random()).slice(0, 3);
-              const opts = [v, ...distractors].sort(() => 0.5 - Math.random());
+            const reshuffledSec1 = shuffleArray(vocabPool).map((v) => {
+              const distractors = shuffleArray(exam2VocabList.filter((x) => x.id !== v.id)).slice(0, 3);
+              const opts = shuffleArray([v, ...distractors]);
               return { item: v, options: opts };
             });
             let questionsPool = allExam2QuestionsPool.filter((q) => activePreset.part2PatternIds.includes(q.patternId));
             if (questionsPool.length === 0) questionsPool = [...allExam2QuestionsPool];
-            const reshuffledSec2 = [...questionsPool].sort(() => 0.5 - Math.random());
+            const reshuffledSec2 = shuffleArray(questionsPool);
 
             setSec1Items(reshuffledSec1);
             setSec2Items(reshuffledSec2);

@@ -16,15 +16,24 @@ import {
 import { playJapaneseAudio } from '../../utils/speech';
 import { exam2ClockQuestions, Exam2QuestionItem } from '../../services/exam2Data';
 
+const shuffleDeck = <T,>(list: T[]): T[] => {
+  const result = [...list];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+};
+
 export const ChronoClockMaster: React.FC = () => {
-  const [questions, setQuestions] = useState<Exam2QuestionItem[]>(exam2ClockQuestions);
+  const [questions, setQuestions] = useState<Exam2QuestionItem[]>(() => shuffleDeck(exam2ClockQuestions));
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
   const [isChoiceRevealed, setIsChoiceRevealed] = useState<boolean>(true);
   const [score, setScore] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
 
-  const currentQ = questions[currentIndex];
+  const currentQ = questions[currentIndex] || questions[0];
   const { hour, minute, period } = currentQ.visualData;
 
   // Calculate angles for analog clock hands
@@ -50,11 +59,16 @@ export const ChronoClockMaster: React.FC = () => {
   const handleNextQuestion = () => {
     setSelectedOption(null);
     setIsAnswered(false);
-    setCurrentIndex(prev => (prev + 1) % questions.length);
+    if (currentIndex + 1 >= questions.length) {
+      setQuestions(shuffleDeck(exam2ClockQuestions));
+      setCurrentIndex(0);
+    } else {
+      setCurrentIndex(prev => prev + 1);
+    }
   };
 
   const handleReset = () => {
-    setQuestions(exam2ClockQuestions);
+    setQuestions(shuffleDeck(exam2ClockQuestions));
     setSelectedOption(null);
     setIsAnswered(false);
     setCurrentIndex(0);
@@ -62,7 +76,7 @@ export const ChronoClockMaster: React.FC = () => {
   };
 
   const handleShuffle = () => {
-    setQuestions([...exam2ClockQuestions].sort(() => 0.5 - Math.random()));
+    setQuestions(shuffleDeck(exam2ClockQuestions));
     setSelectedOption(null);
     setIsAnswered(false);
     setCurrentIndex(0);
