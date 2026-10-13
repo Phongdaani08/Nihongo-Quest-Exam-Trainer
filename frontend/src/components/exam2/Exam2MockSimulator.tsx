@@ -1117,7 +1117,7 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                 <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{sec2Items[sec2Index].promptTh}</span>
               </div>
 
-              {/* Visual Photo Box (Real Photo from Chapter 3-4 slides without spoilers) */}
+              {/* Visual Display Box (Slide styled) */}
               {sec2Items[sec2Index].imageSrc && (
                 <div
                   style={{
@@ -1140,6 +1140,135 @@ export const Exam2MockSimulator: React.FC<Exam2MockProps> = ({ initialMode = 'ti
                     alt={sec2Items[sec2Index].meaningTh}
                     style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', borderRadius: 'var(--radius-md)' }}
                   />
+                </div>
+              )}
+
+              {/* Visual Clock Display (Matching Exam Slide Box: e.g. 16.30 น. / 09.45 น.) */}
+              {sec2Items[sec2Index].visualType === 'clock' && (
+                <div
+                  style={{
+                    border: '2px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '22px 28px',
+                    backgroundColor: 'var(--bg-app)',
+                    textAlign: 'center',
+                    maxWidth: '420px',
+                    margin: '0 auto 20px auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    เวลาที่แสดงบนหน้าจอข้อสอบ (พูดเวลาตามที่เห็น):
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '38px',
+                      fontWeight: 900,
+                      color: 'var(--primary-700)',
+                      letterSpacing: '0.05em',
+                      fontFamily: 'monospace, sans-serif',
+                    }}
+                  >
+                    {sec2Items[sec2Index].visualData?.timeDisplay || `${sec2Items[sec2Index].visualData?.display || sec2Items[sec2Index].visualData?.timeString} น.`}
+                  </div>
+                  <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="badge badge-primary" style={{ fontSize: '12px', padding: '3px 12px' }}>
+                      {sec2Items[sec2Index].visualData?.period === 'gozen' ? '☀️ ช่วงเช้า a.m. (gozen)' : '🌙 ช่วงบ่าย-ค่ำ p.m. (gogo)'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Visual Phone Display (Matching Exam Slide Box) */}
+              {sec2Items[sec2Index].visualType === 'phone' && (
+                <div
+                  style={{
+                    border: '2px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '20px 28px',
+                    backgroundColor: 'var(--bg-app)',
+                    textAlign: 'center',
+                    maxWidth: '420px',
+                    margin: '0 auto 20px auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    เบอร์โทรศัพท์ที่แสดงบนหน้าจอข้อสอบ (พูดตามที่เห็น):
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '32px',
+                      fontWeight: 900,
+                      color: 'var(--text-main)',
+                      letterSpacing: '0.06em',
+                      fontFamily: 'monospace, sans-serif',
+                    }}
+                  >
+                    {sec2Items[sec2Index].visualData?.phoneDisplay}
+                  </div>
+                </div>
+              )}
+
+              {/* Visual Price Display (Matching Exam Slide Box) */}
+              {sec2Items[sec2Index].visualType === 'price' && (
+                <div
+                  style={{
+                    border: '2px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '20px 28px',
+                    backgroundColor: 'var(--bg-app)',
+                    textAlign: 'center',
+                    maxWidth: '420px',
+                    margin: '0 auto 20px auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    ป้ายราคาที่แสดงบนหน้าจอข้อสอบ ({sec2Items[sec2Index].visualData?.item}):
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '34px',
+                      fontWeight: 900,
+                      color: 'var(--primary-700)',
+                      letterSpacing: '0.05em',
+                      fontFamily: 'monospace, sans-serif',
+                    }}
+                  >
+                    {sec2Items[sec2Index].visualData?.price?.toLocaleString()} ¥
+                  </div>
+                </div>
+              )}
+
+              {/* Visual Schedule Display (Matching Exam Slide Box) */}
+              {sec2Items[sec2Index].visualType === 'schedule' && (
+                <div
+                  style={{
+                    border: '2px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '20px 28px',
+                    backgroundColor: 'var(--bg-app)',
+                    textAlign: 'center',
+                    maxWidth: '440px',
+                    margin: '0 auto 20px auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    ตารางเวลาที่แสดงบนหน้าจอข้อสอบ ({sec2Items[sec2Index].visualData?.activityTh || sec2Items[sec2Index].visualData?.activity}):
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '32px',
+                      fontWeight: 900,
+                      color: 'var(--primary-700)',
+                      letterSpacing: '0.05em',
+                      fontFamily: 'monospace, sans-serif',
+                    }}
+                  >
+                    {sec2Items[sec2Index].visualData?.timeRangeDisplay || `${sec2Items[sec2Index].visualData?.startTime} – ${sec2Items[sec2Index].visualData?.endTime} น.`}
+                  </div>
                 </div>
               )}
 

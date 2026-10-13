@@ -94,9 +94,15 @@ export const ChronoClockMaster: React.FC = () => {
       <div className="card" style={{ padding: '14px 20px', backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <AlertTriangle size={16} color="var(--warning-600)" />
-          <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>จุดระวังข้อยกเว้นออกสอบบ่อย (Irregularities):</strong>
+          <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>จุดระวังข้อยกเว้นออกสอบบ่อย (Irregularities & AM/PM):</strong>
         </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', fontSize: '12px' }}>
+          <span className="badge" style={{ backgroundColor: 'var(--bg-surface)', border: '1.5px solid var(--primary-300)', color: 'var(--primary-700)' }}>
+            ☀️ เช้า (a.m.): <strong>gozen (午前)</strong>
+          </span>
+          <span className="badge" style={{ backgroundColor: 'var(--bg-surface)', border: '1.5px solid var(--indigo-300)', color: 'var(--indigo-700)' }}>
+            🌙 บ่าย-ค่ำ (p.m.): <strong>gogo (午後)</strong>
+          </span>
           <span className="badge" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-strong)' }}>
             4 โมง: <strong style={{ color: 'var(--primary-700)' }}>yo-ji</strong> (ห้าม yon-ji)
           </span>
@@ -185,25 +191,31 @@ export const ChronoClockMaster: React.FC = () => {
           {/* Digital Time Badge */}
           <div style={{
             display: 'inline-flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            gap: '10px',
-            padding: '8px 18px',
-            borderRadius: 'var(--radius-full)',
+            padding: '10px 24px',
+            borderRadius: 'var(--radius-lg)',
             backgroundColor: 'var(--bg-subtle)',
-            border: '1.5px solid var(--border-strong)',
+            border: '2px solid var(--border-strong)',
             marginBottom: '16px'
           }}>
-            <Clock size={16} color="var(--primary-600)" />
-            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em' }}>
-              {currentQ.visualData.display} น. ({period === 'gozen' ? 'ช่วงเช้า a.m.' : 'ช่วงบ่าย-ค่ำ p.m.'})
-            </span>
+            <div style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={13} color="var(--primary-600)" />
+              <span>{period === 'gozen' ? 'ช่วงเช้า (a.m.)' : 'ช่วงบ่าย-ค่ำ (p.m.)'}</span>
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: 900, color: 'var(--primary-700)', letterSpacing: '0.05em', fontFamily: 'monospace, sans-serif' }}>
+              {currentQ.visualData.timeDisplay || `${currentQ.visualData.display || currentQ.visualData.timeString} น.`}
+            </div>
+            <div style={{ fontSize: '12.5px', fontWeight: 700, color: period === 'gozen' ? 'var(--primary-600)' : 'var(--indigo-600)', marginTop: '2px' }}>
+              {period === 'gozen' ? '☀️ gozen (午前)' : '🌙 gogo (午後)'}
+            </div>
           </div>
 
-          {/* Teacher Question Prompt */}
+          {/* Teacher Question Prompt (Romaji First) */}
           <div style={{ width: '100%', padding: '16px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-subtle)', marginBottom: '16px' }}>
             <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>คำถามจากอาจารย์:</p>
             <p style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)' }}>
-              "{currentQ.promptJp}"
+              "{currentQ.promptRomaji || currentQ.promptJp}"
             </p>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
               ({currentQ.promptTh})
@@ -212,7 +224,7 @@ export const ChronoClockMaster: React.FC = () => {
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
-              onClick={() => playJapaneseAudio(currentQ.promptJp)}
+              onClick={() => playJapaneseAudio(currentQ.promptRomaji || currentQ.promptJp)}
               className="btn-outline"
               style={{ padding: '8px 16px', fontSize: '13px' }}
             >
